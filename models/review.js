@@ -14,7 +14,7 @@ const reviewSchem = new mongoose.Schema({
         required: true,
         ref: "gem"
     },
-    imgages: {
+    images: {
         type: [String],
     }
 })
