@@ -1,6 +1,6 @@
 import mongoose, { Mongoose } from "mongoose";
 const reviewSchem = new mongoose.Schema({
-    createdBy: {
+    userId: {
         type: mongoose.Types.ObjectId,
         required: true,
         ref: "User" 
@@ -14,7 +14,7 @@ const reviewSchem = new mongoose.Schema({
         required: true,
         ref: "Gem"
     },
-    imgages: {
+    images: {
         type: [String],
     }
 })
