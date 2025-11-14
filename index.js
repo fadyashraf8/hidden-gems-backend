@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors"; 
 import { globalMiddleWare } from "./middleware/globalMiddleWare.js";
 import authRouter from "./route/auth.route.js";
+import userRouter from "./route/user.route.js";
+import categoryRouter from "./route/category.router.js";
 
 dotenv.config();
 
@@ -22,6 +24,8 @@ app.use(cors({
 
 app.get("/", (req, res) => res.send("Hello World!"));
 app.use("/auth", authRouter);
+app.use("/users", userRouter);
+app.use("/categories", categoryRouter);
 
 app.use(globalMiddleWare);
 

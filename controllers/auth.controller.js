@@ -15,28 +15,28 @@ const signUp = catchAsyncError(async (req, res, next) => {
     Number(process.env.SALT_ROUNDS)
   );
 
-  let user = new userModel({
+  let result = new userModel({
     ...req.body,
     password: hashedPassword,
     image: req.file?.filename,
     code: uuidv4(),
   });
 
-  await user.save();
+  await result.save();
 
   await sendEmail(
     req.body.email,
     "Welcome to Gemsy",
     `<h2>Welcome ${req.body.firstName}!</h2>
      <p>Your verification code is:</p>
-     <h1>${user.code}</h1>`
+     <h1>${result.code}</h1>`
   );
 
   res
     .status(201)
     .json({
       message: "User registered successfully. Please verify your email.",
-      user,
+      result,
     });
 });
 
@@ -122,6 +122,7 @@ if (code !== user.code)
     Number(process.env.SALT_ROUNDS)
   );
   user.code = null;
+  user.passwordChangedAt = new Date();
   await user.save();
 
 
@@ -139,22 +140,32 @@ if (code !== user.code)
 };
 
 
- const protectedRoutes = catchAsyncError(async (req, res, next) => {
-  const { token } = req.headers;
+const protectedRoutes = catchAsyncError(async (req, res, next) => {
+  const token = req.cookies.token; 
+
   if (!token) return next(new AppError("Token Not Provided", 401));
 
-  let decoded = await jwt.verify(token, process.env.JWT_KEY);
-  let user = await userModel.findById(decoded.userId);
-  if (!user) return next(new AppError("invalid token", 401));
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_KEY);
+  } catch (err) {
+    return next(new AppError("Invalid token", 401));
+  }
+
+  
+  let user = await userModel.findById(decoded.userInfo._id);
+  if (!user) return next(new AppError("User no longer exists", 401));
 
   if (user.passwordChangedAt) {
     let changePasswordDate = parseInt(user.passwordChangedAt.getTime() / 1000);
     if (changePasswordDate > decoded.iat)
-      return next(new AppError("invalid token", 401));
+      return next(new AppError("Password changed — login again", 401));
   }
+
   req.user = user;
   next();
 });
+
  const allowedTo = (...roles) => {
   return catchAsyncError(async (req, res, next) => {
     if (!roles.includes(req.user.role))
