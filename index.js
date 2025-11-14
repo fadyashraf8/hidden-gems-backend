@@ -5,7 +5,10 @@ import cookieParser from "cookie-parser";
 import cors from "cors"; 
 import { globalMiddleWare } from "./middleware/globalMiddleWare.js";
 import authRouter from "./route/auth.route.js";
+import userRouter from "./route/user.route.js";
+import categoryRouter from "./route/category.router.js";
 import activityRouter from "./route/activity.route.js";
+import reviewRouter from "./route/review.routes.js";
 
 dotenv.config();
 
@@ -23,7 +26,10 @@ app.use(cors({
 
 app.get("/", (req, res) => res.send("Hello World!"));
 app.use("/auth", authRouter);
-app.use("/activity", activityRouter)
+app.use("/activity", activityRouter);
+app.use("/review", reviewRouter);
+app.use("/users", userRouter);
+app.use("/categories", categoryRouter);
 
 app.use(globalMiddleWare);
 

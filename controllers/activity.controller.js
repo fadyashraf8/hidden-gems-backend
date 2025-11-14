@@ -1,5 +1,5 @@
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
-import { getAllActivitiesForUser, createActivityForUser, deleteActivityById} from "../repositories/activity.repository.js";
+import { getAllActivitiesForUser, createActivityForUser, deleteActivityById} from "../repository/activity.repository.js";
 import { AppError } from "../utils/AppError.js";
 
 const getAllActivities = catchAsyncError(async (req, res) => {
@@ -24,6 +24,6 @@ const deleteActivity = catchAsyncError(async (req, res, next) => {
     if(!deletedActivity) {
         return next(new AppError("Activity not found", 404));
     }
-    res.status(200).send(deletedActivity);
+    return res.status(200).send(deletedActivity);
 })
 export {getAllActivities, postActivity, deleteActivity}

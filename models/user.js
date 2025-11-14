@@ -58,6 +58,6 @@ const userSchema = new mongoose.Schema({
   // qrcode: {
 
   // }
-});
+}, { timestamps: true });
 
 export const userModel = mongoose.model("user", userSchema);
