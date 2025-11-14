@@ -1,0 +1,19 @@
+import {activityModel} from "../models/activity.js";
+import mongoose from "mongoose";
+export const getAllActivitiesForUser = async (userId) => {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new Error("Invalid user ID");
+    }
+    return await activityModel.find({userId: userId});
+}
+
+export const createActivityForUser = async (review)=> {
+    return await activityModel.create(review);
+}
+
+export const deleteActivityById = async (id) => {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new Error("Invalid activity ID");
+    }
+    return await activityModel.findByIdAndDelete(id);
+}

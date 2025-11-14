@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const activitySchema = new mongoose.Schema({
-    createdBy: {
+    userId: {
         type: mongoose.Types.ObjectId,
         ref: "user",
         required: true

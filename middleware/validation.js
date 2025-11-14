@@ -6,6 +6,7 @@ export const validation = (schema) => {
         let inputs = { ...req.body, ...req.params, ...req.query }
         let { error } = schema.validate(inputs, { abortEarly: false })
         if (error) {
+            console.log("error in joi validations");
             let errors = error.details.map(e => e.message)
             res.json(errors)
         } else {
