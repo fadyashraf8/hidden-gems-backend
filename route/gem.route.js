@@ -1,11 +1,10 @@
-
 import express from "express";
 import {
-    createGem,
-    deleteGem,
-    getAllGems,
-    getGem,
-    updateGem,
+  createGem,
+  deleteGem,
+  getAllGems,
+  getGemById,
+  updateGem,
 } from "../controllers/gem.controller.js";
 import { uploadMultipleFile } from "../middleware/fileUpload.js";
 import { validation } from "../middleware/validation.js";
@@ -19,9 +18,16 @@ gemRouter.route("/")
     .get(getAllGems);
     
 
-gemRouter.route("/:id")
-         .get(getGem)
-         .delete(protectedRoutes,allowedTo("admin, owner"), deleteGem)
-         .put(protectedRoutes,allowedTo("admin"), uploadMultipleFile("images", "gem"),validation(gemSchema), updateGem)
+gemRouter
+  .route("/:id")
+  .get(getGemById)
+  .delete(protectedRoutes, allowedTo("admin, owner"), deleteGem)
+  .put(
+    protectedRoutes,
+    allowedTo("admin"),
+    uploadMultipleFile("images", "gem"),
+    validation(gemSchema),
+    updateGem
+  );
 
 export default gemRouter;         

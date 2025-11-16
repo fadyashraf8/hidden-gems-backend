@@ -1,10 +1,10 @@
-import { catchAsyncError } from "../middleware/catchAsyncError";
-import { gemModel } from "../models/gem.js";
+import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { AppError } from "../utils/AppError.js";
 import { ApiFeatures } from "../utils/ApiFeatures.js";
+import { getGems, getGem, createTheGem, updateTheGem, deleteTheGem, findGemByName } from "../repository/gem.repo.js";
 
 const getAllGems = catchAsyncError(async (req, res, next) => {
-  let apifeatures = new ApiFeatures(gemModel.find({}), req.query)
+  let apifeatures = new ApiFeatures(getGems(), req.query)
     .paginate()
     .sort()
     .fields()
@@ -14,15 +14,15 @@ const getAllGems = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ message: "success", page: apifeatures.page, result });
 });
 
-const getGem = catchAsyncError(async (req, res, next) => {
+const getGemById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  let result = await gemModel.findById(id);
+  let result = await getGem(id);
   if (!result) return next(new AppError(`Gem not found`, 404));
   res.status(200).json({ message: "success", result });
 });
 
 const createGem = catchAsyncError(async (req, res, next) => {
-  let isExist = await gemModel.findOne({ name: req.body.name });
+  let isExist = await findGemByName(req.body.name);
   if (isExist) return next(new AppError(`Gem already exists`, 400));
 
   let status = "pending";
@@ -30,20 +30,18 @@ const createGem = catchAsyncError(async (req, res, next) => {
     status = "accepted";
   }
 
-  let result = new gemModel({
+  let gemData = {
     ...req.body,
     image: req.file?.filename,
     status: status,
     createdBy: req.user._id,
-  });
-  await result.save();
+  };
+  let result = await createTheGem(gemData);
 
   if (status === "accepted") {
     res.status(200).json({ message: "Gem created successfully", result });
   } else {
-    res
-      .status(200)
-      .json({
+    res.status(200).json({
         message: "Gem created successfully, waiting for admin approval",
         result,
       });
@@ -52,7 +50,7 @@ const createGem = catchAsyncError(async (req, res, next) => {
 
 const updateGem = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  let result = await gemModel.findById(id);
+  let result = await getGem(id);
   if (!result) return next(new AppError(`Gem not found`, 404));
 
   if (
@@ -63,7 +61,7 @@ const updateGem = catchAsyncError(async (req, res, next) => {
   }
 
   if (req.user.role == "admin") {
-    result = await gemModel.findByIdAndUpdate(id, req.body, { new: true });
+    result = await updateTheGem(id, req.body);
     res.status(200).json({ message: "Gem updated successfully", result });
   } else {
     const updateData = {
@@ -71,7 +69,7 @@ const updateGem = catchAsyncError(async (req, res, next) => {
       status: "pending",
     };
 
-    result = await gemModel.findByIdAndUpdate(id, updateData, { new: true });
+    result = await updateTheGem(id, updateData);
     res.status(200).json({
         message: "your gem updated successfully, waiting for admin approval ",
         result,
@@ -81,7 +79,7 @@ const updateGem = catchAsyncError(async (req, res, next) => {
 
 const deleteGem = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  let result = await gemModel.findById(id);
+  let result = await getGem(id);
   if (!result) return next(new AppError(`Gem not found`, 404));
 
   if (
@@ -91,8 +89,8 @@ const deleteGem = catchAsyncError(async (req, res, next) => {
     return next(new AppError(`You are not allowed to delete this gem`, 403));
   }
 
-  await gemModel.findByIdAndDelete(id);
+  await deleteTheGem(id);
   res.status(200).json({ message: "Gem deleted successfully", result });
 });
 
-export { getAllGems, getGem, createGem, updateGem, deleteGem };
+export { getAllGems, getGemById, createGem, updateGem, deleteGem };
