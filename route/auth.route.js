@@ -9,8 +9,9 @@ const authRouter=express.Router();
 
 authRouter.route('/signUp').post(uploadSingleFile("image","user"),validation(signUpSchema),authController.signUp)
 authRouter.route('/signIn').post(validation(signInSchema),authController.signIn)
-authRouter.route('/verify/:token').post(authController.VerifyUser)
-authRouter.route('/logout').post(authController.logout)
+authRouter.route('/verify').post(authController.VerifyUser)
+authRouter.route('/logout').post(authController.protectedRoutes,authController.logout)
+authRouter.route('/me').get(authController.protectedRoutes,authController.getCurrentUser)
 authRouter.route('/forgetPassword').post(authController.forgetPassword)
 authRouter.route('/resetPassword').post(authController.resetPassword)
 

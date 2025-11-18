@@ -1,15 +1,17 @@
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { AppError } from "../utils/AppError.js";
 import { ApiFeatures } from "../utils/ApiFeatures.js";
-import { getGems, getGem, createTheGem, updateTheGem, deleteTheGem, findGemByName } from "../repository/gem.repo.js";
+import { getGemsPromise,getGemsQuery, getGem, createTheGem, updateTheGem, deleteTheGem, findGemByName } from "../repository/gem.repo.js";
 
 const getAllGems = catchAsyncError(async (req, res, next) => {
-  let apifeatures = new ApiFeatures(getGems(), req.query)
+  let apifeatures = new ApiFeatures(getGemsQuery(), req.query)
     .paginate()
     .sort()
     .fields()
     .filter()
     .search();
+
+
   let result = await apifeatures.mongooseQuery;
   res.status(200).json({ message: "success", page: apifeatures.page, result });
 });
@@ -29,10 +31,11 @@ const createGem = catchAsyncError(async (req, res, next) => {
   if (req.user.role === "admin") {
     status = "accepted";
   }
+// console.log(req.files?.images);
 
   let gemData = {
     ...req.body,
-    image: req.file?.filename,
+    images: req.files.images.map(obj => obj.filename),
     status: status,
     createdBy: req.user._id,
   };
@@ -68,7 +71,7 @@ const updateGem = catchAsyncError(async (req, res, next) => {
       ...req.body,
       status: "pending",
     };
-
+    // console.log("updateData:", updateData);
     result = await updateTheGem(id, updateData);
     res.status(200).json({
         message: "your gem updated successfully, waiting for admin approval ",
