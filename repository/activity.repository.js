@@ -7,8 +7,8 @@ export const getAllActivitiesForUser = async (userId) => {
     return await activityModel.find({userId: userId});
 }
 
-export const createActivityForUser = async (review)=> {
-    return await activityModel.create(review);
+export const createActivityForUser = async (activity)=> {
+    return await activityModel.create(activity);
 }
 
 export const deleteActivityById = async (id) => {

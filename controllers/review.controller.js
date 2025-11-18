@@ -1,10 +1,21 @@
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
-import { createReview, deleteReviewById, getAllReviewsForGem, updateReviewById } from "../repository/review.repository.js";
+import { createReview, deleteReviewById, getAllReviewsForGem, updateReviewById, getAllReviews } from "../repository/review.repository.js";
 import { ApiFeatures } from "../utils/ApiFeatures.js";
 import { AppError } from "../utils/AppError.js";
+import { logActivity } from "./activity.controller.js";
 
 
-const getAllReviews = catchAsyncError(async (req, res, next) => {
+const getAllReviewsForAllGems = catchAsyncError(async (req, res) => {
+    const apifeatures = new ApiFeatures(getAllReviews(), req.query)
+        .paginate()
+        .sort()
+        .fields()
+        .filter()
+        .search();
+    const result = await apifeatures.mongooseQuery;
+    return res.status(200).send(result);    
+})
+const getAllReviewsByGemId = catchAsyncError(async (req, res, next) => {
     const gemId = req.params.id;
     const apifeatures = new ApiFeatures(getAllReviewsForGem(gemId), req.query)
         .paginate()
@@ -21,6 +32,7 @@ const postReview = catchAsyncError(async (req, res, next) => {
     const reviewObj = req.body;
     //check gemId exist
     const createdReview =  await createReview(reviewObj);
+    logActivity(req.user.id, req.method, createdReview);
     return res.status(200).send(createdReview);
 })
 
@@ -30,6 +42,7 @@ const deleteReview = catchAsyncError(async (req, res, next) => {
         if(!deletedReview) {
             return next(new AppError("Review not found", 404));
         }
+        logActivity(req.user.id, req.method, deleteReview);
         return res.status(200).send(deletedReview);
 })
 
@@ -40,7 +53,8 @@ const updateReview = catchAsyncError(async (req, res, next) => {
     if(!withUpdatesReview) {
         return next(new AppError("Review can not be found", 404));
     }
+    logActivity(req.user.id, req.method, withUpdatesReview);
     return res.status(201).send(withUpdatesReview);
 })
 
-export {getAllReviews, postReview, deleteReview, updateReview}
+export {getAllReviewsForAllGems, getAllReviewsByGemId, postReview, deleteReview, updateReview}

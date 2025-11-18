@@ -34,4 +34,35 @@ const deleteActivity = catchAsyncError(async (req, res, next) => {
     }
     return res.status(200).send(deletedActivity);
 })
-export {getAllActivities, postActivity, deleteActivity}
+
+const logActivity = async (userId, action, resourceData) => {
+    let activityText = "";
+
+    switch (action) {
+        case 'POST':
+            activityText = `created a new item`;
+            break;
+        case 'PUT':
+        case 'PATCH':
+            activityText = `updated an item`;
+            break;
+        case 'DELETE':
+            activityText = `deleted an item`;
+            break;
+        default:
+            activityText = `performed an action`;
+    }
+
+    try {
+        const activity = {
+            userId: userId,
+            text: activityText, 
+            description: resourceData.name || resourceData.description || activityText
+        }
+        
+        await createActivityForUser(activity); 
+    } catch (error) {
+        console.error("creating activity failed:", error.message);
+    }
+};
+export {getAllActivities, postActivity, deleteActivity, logActivity}

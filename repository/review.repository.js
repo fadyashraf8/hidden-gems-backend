@@ -5,6 +5,10 @@ export const createReview = async (review) => {
     return await reviewModel.create(review);
 }
 
+export const getAllReviews = () => {
+    return reviewModel.find();
+}
+
 export const getAllReviewsForGem = (gemId) => {
     return reviewModel.find({gemId: gemId});
 }
