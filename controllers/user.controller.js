@@ -74,7 +74,7 @@ const updateUser = catchAsyncError(async (req, res, next) => {
 
   for (let key of allowedUpdates) {
     if (req.body[key] !== undefined) {
-      user[key] = req.body[key];
+      result[key] = req.body[key];
     }
   }
 
