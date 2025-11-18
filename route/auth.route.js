@@ -11,7 +11,7 @@ authRouter.route('/signUp').post(uploadSingleFile("image","user"),validation(sig
 authRouter.route('/signIn').post(validation(signInSchema),authController.signIn)
 authRouter.route('/verify').post(authController.VerifyUser)
 authRouter.route('/logout').post(authController.protectedRoutes,authController.logout)
-authRouter.route('/me').post(authController.protectedRoutes,authController.getCurrentUser)
+authRouter.route('/me').get(authController.protectedRoutes,authController.getCurrentUser)
 authRouter.route('/forgetPassword').post(authController.forgetPassword)
 authRouter.route('/resetPassword').post(authController.resetPassword)
 
