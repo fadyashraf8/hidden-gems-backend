@@ -70,25 +70,22 @@ const getAllCategories = catchAsyncError(async (req, res, next) => {
 const updateCategory = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
 
-  let updateData = {
-    categoryName: req.body.categoryName,
-  };
+  let category = await categoryModel.findById(id);
+  if (!category) return next(new AppError("Category not found", 404));
 
-  if (req.file?.filename) {
-    updateData.categoryImage = req.file.filename;
+  if (req.body.categoryName) {
+    category.categoryName = req.body.categoryName;
   }
 
-  let result = await categoryModel.findByIdAndUpdate(
-    id,
-    updateData,
-    { new: true }
-  );
+  if (req.file?.filename) {
+    category.categoryImage = req.file.filename;
+  }
 
-  if (!result) return next(new AppError("Category not found", 404));
+  await category.save();
 
   return res.status(200).json({
     message: "success",
-    result,
+    category,
   });
 });
 
