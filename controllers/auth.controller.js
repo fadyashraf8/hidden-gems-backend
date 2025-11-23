@@ -2,9 +2,10 @@ import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { userModel } from "../models/user.js";
 import { AppError } from "../utils/AppError.js";
 import jwt from "jsonwebtoken";
-import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import { sendEmail } from "../emails/user.email.js";
+import Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const signUp = catchAsyncError(async (req, res, next) => {
   let isExist = await userModel.findOne({ email: req.body.email });
@@ -179,6 +180,82 @@ const allowedTo = (...roles) => {
   });
 };
 
+export const createCheckoutSession = catchAsyncError(async (req, res, next) => {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    line_items: [
+      {
+        price: "price_1SWOZ7P3E6MDFeyI6Dmy7WZU",
+        quantity: 1,
+      },
+    ],
+    customer_email: req.user.email,
+    client_reference_id: req.user._id.toString(),
+
+    success_url: `${frontendUrl}/success`,
+    cancel_url: `${frontendUrl}/cancel`,
+  });
+
+  res.status(200).json({ message: "success", session });
+});
+
+export const createOnlineSession = async (request, response) => {
+  console.log("🔑 WEBHOOK_SECRET exists:", !!process.env.WEBHOOK_SECRET);
+  console.log("🔑 STRIPE_SECRET_KEY exists:", !!process.env.STRIPE_SECRET_KEY);
+  console.log("🔑 Body is Buffer:", Buffer.isBuffer(request.body));
+
+  let event;
+
+  if (process.env.WEBHOOK_SECRET) {
+    const signature = request.headers["stripe-signature"];
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        request.body,
+        signature,
+        process.env.WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.log("error:", err.message);
+      return response.status(400).send(`Webhook Error: ${err.message}`);
+    }
+  } else {
+    try {
+      const bodyString = request.body.toString("utf8");
+      event = JSON.parse(bodyString);
+    } catch (parseError) {
+      console.log("error:", parseError.message);
+      return response.status(400).send("Invalid request body");
+    }
+  }
+
+  if (event.type === "checkout.session.completed") {
+    console.log("Customer started subscription");
+     await userModel.findByIdAndUpdate(
+    event.data.object.client_reference_id,
+    { role: "owner" }
+  );
+
+  return response.status(200).send("ok");
+  }
+
+  if (event.type === "invoice.payment_succeeded") {
+    console.log("Monthly payment success");
+    // هنا تعمل Activate Subscription للعميل في DB
+  }
+
+  if (event.type === "invoice.payment_failed") {
+    console.log("Monthly payment failed");
+    // Disable Account / Send email…etc
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    console.log("Subscription canceled");
+    // Disable access in your DB
+  }
+};
+
 export {
   signUp,
   signIn,
@@ -188,5 +265,5 @@ export {
   protectedRoutes,
   forgetPassword,
   resetPassword,
-  getCurrentUser
+  getCurrentUser,
 };
