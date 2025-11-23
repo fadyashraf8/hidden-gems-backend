@@ -11,22 +11,21 @@ import activityRouter from "./route/activity.route.js";
 import reviewRouter from "./route/review.routes.js";
 import gemRouter from "./route/gem.route.js";
 import { createOnlineSession } from "./controllers/auth.controller.js";
-
 dotenv.config();
 
 const app = express();
+const port = process.env.PORT || 3000;
+
 
 app.post(
   "/webhook",
   express.raw({ type: "application/json" }),
   createOnlineSession
 );
-
 app.use(cors({
   origin: (origin, callback) => callback(null, origin), 
   credentials: true,
 }));
-
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static('uploads'));
@@ -41,9 +40,8 @@ app.use("/gems", gemRouter);
 
 app.use(globalMiddleWare);
 
-// Mongo connection
 mongoose.connect(process.env.DB_URL)
   .then(() => console.log("DB Connected"))
   .catch((err) => console.error(" DB Connection Failed:", err));
 
-export default app;
+app.listen(port, () => console.log(`Server running on port ${port}`));
