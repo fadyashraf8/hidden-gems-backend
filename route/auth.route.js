@@ -18,6 +18,7 @@ authRouter.route('/resetPassword').post(authController.resetPassword)
 
 
 authRouter.route('/ownerRegister').post(authController.protectedRoutes,authController.createCheckoutSession)
+authRouter.route('/google').post(authController.googleLogin)
 
 
 

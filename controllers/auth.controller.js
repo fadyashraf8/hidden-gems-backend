@@ -5,6 +5,11 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { sendEmail } from "../emails/user.email.js";
 import Stripe from "stripe";
+import { OAuth2Client } from 'google-auth-library';
+
+const googleClient = new OAuth2Client(process.env.CLIENT_ID);
+
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const signUp = catchAsyncError(async (req, res, next) => {
@@ -266,6 +271,67 @@ if (event.type === "checkout.session.completed") {
   }
 };
 
+
+
+const googleLogin = catchAsyncError(async (req, res, next) => {
+  const { token } = req.body;
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture, sub: googleId } = payload;
+
+    let user = await userModel.findOne({ email });
+
+    if (!user) {
+      user = new userModel({
+        email,
+        firstName: name.split(' ')[0] || name,
+        lastName: name.split(' ')[1] || '',
+        googleId,
+        image: picture,
+        verified: true, 
+        password: bcrypt.hashSync(Math.random().toString(36), Number(process.env.SALT_ROUNDS)) 
+      });
+      await user.save();
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      user.verified = true;
+      await user.save();
+    }
+
+    let jwtToken = jwt.sign({ userInfo: user }, process.env.JWT_KEY, {
+      expiresIn: "7d",
+    });
+
+    res
+      .cookie("token", jwtToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+      })
+      .status(200)
+      .json({ 
+        message: "Login successful",
+        user: {
+          id: user._id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          image: user.image,
+          role: user.role
+        }
+      });
+
+  } catch (error) {
+    console.error('Google Login Error:', error);
+    return next(new AppError('Invalid Google token', 401));
+  }
+});
 export {
   signUp,
   signIn,
@@ -276,4 +342,6 @@ export {
   forgetPassword,
   resetPassword,
   getCurrentUser,
+    googleLogin  
+
 };
