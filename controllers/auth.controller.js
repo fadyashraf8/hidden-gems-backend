@@ -5,6 +5,11 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { sendEmail } from "../emails/user.email.js";
 import Stripe from "stripe";
+import { OAuth2Client } from 'google-auth-library';
+
+const googleClient = new OAuth2Client(process.env.CLIENT_ID);
+
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const signUp = catchAsyncError(async (req, res, next) => {
@@ -180,30 +185,90 @@ const allowedTo = (...roles) => {
   });
 };
 
-export const createCheckoutSession = catchAsyncError(async (req, res, next) => {
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+// export const createCheckoutSession = catchAsyncError(async (req, res, next) => {
+//   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+//   const session = await stripe.checkout.sessions.create({
+//     mode: "subscription",
+//     line_items: [
+//       {
+//         price: "price_1SWOZ7P3E6MDFeyI6Dmy7WZU",
+//         quantity: 1,
+//       },
+//     ],
+//     customer_email: req.user.email,
+//     client_reference_id: req.user._id.toString(),
+
+//     success_url: `${frontendUrl}/success`,
+//     cancel_url: `${frontendUrl}/cancel`,
+//   });
+
+//   res.status(200).json({ message: "success", session });
+// });
+
+export const checkoutOwner = async (req, res) => {
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [
-      {
-        price: "price_1SWOZ7P3E6MDFeyI6Dmy7WZU",
-        quantity: 1,
-      },
+      { price: process.env.OWNER_PRICE_ID, quantity: 1 }
     ],
     customer_email: req.user.email,
     client_reference_id: req.user._id.toString(),
-
+    metadata: {
+      type: "owner"
+    },
     success_url: `${frontendUrl}/success`,
     cancel_url: `${frontendUrl}/cancel`,
   });
 
-  res.status(200).json({ message: "success", session });
-});
+  res.json({ session });
+};
+export const checkoutGold = async (req, res) => {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    line_items: [
+      { price: process.env.GOLD_PRICE_ID, quantity: 1 }
+    ],
+    customer_email: req.user.email,
+    client_reference_id: req.user._id.toString(),
+    metadata: {
+      type: "user",
+      plan: "gold"
+    },
+    success_url: `${frontendUrl}/success`,
+    cancel_url: `${frontendUrl}/cancel`,
+  });
+
+  res.json({ session });
+};
+export const checkoutPlatinum = async (req, res) => {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    line_items: [
+      { price: process.env.PLATINUM_PRICE_ID, quantity: 1 }
+    ],
+    customer_email: req.user.email,
+    client_reference_id: req.user._id.toString(),
+    metadata: {
+      type: "user",
+      plan: "platinum"
+    },
+    success_url: `${frontendUrl}/success`,
+    cancel_url: `${frontendUrl}/cancel`,
+  });
+
+  res.json({ session });
+};
+
+
+
 
 export const createOnlineSession = async (request, response) => {
-  console.log("🔑 WEBHOOK_SECRET exists:", !!process.env.WEBHOOK_SECRET);
-  console.log("🔑 STRIPE_SECRET_KEY exists:", !!process.env.STRIPE_SECRET_KEY);
-  console.log("🔑 Body is Buffer:", Buffer.isBuffer(request.body));
 
   let event;
 
@@ -231,19 +296,28 @@ export const createOnlineSession = async (request, response) => {
   }
 
 if (event.type === "checkout.session.completed") {
-  const userId = event.data.object.client_reference_id;
-  console.log("Updating role for userId:", userId);
+  
+  const session = event.data.object;
+  const userId = session.client_reference_id;
+  const type = session.metadata.type;
+  const plan = session.metadata.plan;
 
-  const user = await userModel.findByIdAndUpdate(
-    userId,
-    { role: "owner" },
-    { new: true }
-  );
+  if (type === "owner") {
+    await userModel.findByIdAndUpdate(userId, {
+      role: "owner"
+    });
+  }
 
-  if (!user) {
-    console.log("User not found for role update!");
-  } else {
-    console.log("User role updated to:", user.role);
+  if (type === "user" && plan === "gold") {
+    await userModel.findByIdAndUpdate(userId, {
+      subscription: "gold"
+    });
+  }
+
+  if (type === "user" && plan === "platinum") {
+    await userModel.findByIdAndUpdate(userId, {
+      subscription: "platinum"
+    });
   }
 
   return response.status(200).send("ok");
@@ -266,6 +340,67 @@ if (event.type === "checkout.session.completed") {
   }
 };
 
+
+
+const googleLogin = catchAsyncError(async (req, res, next) => {
+  const { token } = req.body;
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture, sub: googleId } = payload;
+
+    let user = await userModel.findOne({ email });
+
+    if (!user) {
+      user = new userModel({
+        email,
+        firstName: name.split(' ')[0] || name,
+        lastName: name.split(' ')[1] || '',
+        googleId,
+        image: picture,
+        verified: true, 
+        password: bcrypt.hashSync(Math.random().toString(36), Number(process.env.SALT_ROUNDS)) 
+      });
+      await user.save();
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      user.verified = true;
+      await user.save();
+    }
+
+    let jwtToken = jwt.sign({ userInfo: user }, process.env.JWT_KEY, {
+      expiresIn: "7d",
+    });
+
+    res
+      .cookie("token", jwtToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+      })
+      .status(200)
+      .json({ 
+        message: "Login successful",
+        user: {
+          id: user._id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          image: user.image,
+          role: user.role
+        }
+      });
+
+  } catch (error) {
+    console.error('Google Login Error:', error);
+    return next(new AppError('Invalid Google token', 401));
+  }
+});
 export {
   signUp,
   signIn,
@@ -276,4 +411,6 @@ export {
   forgetPassword,
   resetPassword,
   getCurrentUser,
+    googleLogin  
+
 };
