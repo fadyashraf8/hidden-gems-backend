@@ -225,6 +225,8 @@ export const checkoutOwner = async (req, res) => {
   res.json({ session });
 };
 export const checkoutGold = async (req, res) => {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [
@@ -236,13 +238,15 @@ export const checkoutGold = async (req, res) => {
       type: "user",
       plan: "gold"
     },
-    success_url: "...",
-    cancel_url: "..."
+    success_url: `${frontendUrl}/success`,
+    cancel_url: `${frontendUrl}/cancel`,
   });
 
   res.json({ session });
 };
 export const checkoutPlatinum = async (req, res) => {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [
@@ -254,8 +258,8 @@ export const checkoutPlatinum = async (req, res) => {
       type: "user",
       plan: "platinum"
     },
-    success_url: "...",
-    cancel_url: "..."
+    success_url: `${frontendUrl}/success`,
+    cancel_url: `${frontendUrl}/cancel`,
   });
 
   res.json({ session });
