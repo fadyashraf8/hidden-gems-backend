@@ -21,7 +21,9 @@ import QRCode  from "qrcode"
 const createVoucherForUser = catchAsyncError(async(req, res) => {
     const userId = req.user._id;
     const gemId = req.params.gemId;
-    const gemDiscount = await getGem(gemId).discountPremium;
+    const gemDiscountGold = await getGem(gemId).discountGold;
+    const gemDiscountPlatinum = await getGem(gemId).discountGold;
+    let gemDiscount = 0;
 
     if(!gemId) {
         return next(new AppError("Please provide gem id", 400));
@@ -30,6 +32,12 @@ const createVoucherForUser = catchAsyncError(async(req, res) => {
     const userSubsciptionType = getUserById(userId).subscription;
     //get subcribtion type from user id
     //get discount of the gem based on the subscription type
+    if(userSubsciptionType === "gold") {
+        gemDiscount = gemDiscountGold;
+    }
+    else if(userSubsciptionType === 'platinum') {
+        gemDiscount = gemDiscountPlatinum;
+    }
 
     if(!voucherTypes[userSubsciptionType]) {
         return next(new AppError("User not subsriped", 400));
@@ -48,7 +56,7 @@ const createVoucherForUser = catchAsyncError(async(req, res) => {
         gemId: gemId,
         qrCode: ""
     }
-    const qrUrl = await QRCode.toDataURL(voucherCode);
+    const qrUrl = await QRCode.toDataURL("http://localhost:5137/admin/"+voucherCode);
     voucher.qrCode = qrUrl;
     const createdVoucher = await voucherRepository.createVoucher(voucher);
     res.status(201).json({
