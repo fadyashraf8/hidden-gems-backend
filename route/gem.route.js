@@ -15,7 +15,7 @@ const gemRouter = express.Router();
 let filedsArray=[ { name: 'images', maxCount: 10 }]
 
 gemRouter.route("/")
-    .post(protectedRoutes,allowedTo("admin"), uploadMultipleFile(filedsArray, "gem"), validation(gemSchema), createGem)
+    .post(protectedRoutes, uploadMultipleFile(filedsArray, "gem"), validation(gemSchema), createGem)
     .get(getAllGems);
     
 
