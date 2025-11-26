@@ -27,3 +27,13 @@ export const gemUpdateSchema = Joi.object({
   isSubscribed: Joi.boolean().optional(),
 });
 
+export const gemStatusSchema = Joi.object({
+  status: Joi.string()
+    .valid("pending", "rejected", "accepted")
+    .required()
+    .messages({
+      "any.only": "Status must be pending, rejected, or accepted",
+      "any.required": "Status is required",
+    }),
+});
+

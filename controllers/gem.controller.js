@@ -1,7 +1,7 @@
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { AppError } from "../utils/AppError.js";
 import { ApiFeatures } from "../utils/ApiFeatures.js";
-import { getGemsPromise,getGemsQuery, getGem, createTheGem, updateTheGem, deleteTheGem, findGemByName } from "../repository/gem.repo.js";
+import { getGemsPromise,getGemsQuery, getGem, createTheGem, updateTheGem, deleteTheGem, findGemByName, getGemsByUserId, getGemsByCategoryId } from "../repository/gem.repo.js";
 
 const getAllGems = catchAsyncError(async (req, res, next) => {
   
@@ -33,7 +33,6 @@ const result = await apifeatures.mongooseQuery
   });
 });
 
-
 const getGemById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   // console.log(id);
@@ -43,6 +42,84 @@ const getGemById = catchAsyncError(async (req, res, next) => {
   console.log(result);
   if (!result) return next(new AppError(`Gem not found`, 404));
   res.status(200).json({ message: "success", result });
+});
+
+const getAllGemsForCategory = catchAsyncError(async (req, res, next) => {
+  const {categoryId} = req.params;
+
+
+  const countQuery = new ApiFeatures(getGemsByCategoryId(categoryId), req.query)
+    .filter()
+    .search();
+
+  const totalItems = await countQuery.mongooseQuery.countDocuments();
+
+  const apifeatures = new ApiFeatures(getGemsByCategoryId(categoryId),req.query)
+    .filter()
+    .search()
+    .sort()
+    .fields()
+    .paginate();
+
+  const result = await apifeatures.mongooseQuery
+    .populate("createdBy", "firstName lastName email")
+    .populate("category", "categoryName categoryImage");
+
+  const totalPages = Math.ceil(totalItems / apifeatures.limit);
+
+  return res.status(200).json({
+    message: "success",
+    page: apifeatures.page,
+    totalItems,
+    totalPages,
+    result,
+  });
+})
+
+const getAllGemsForUser = catchAsyncError(async (req, res, next) => {
+  const {userId} = req.params;
+  if (req.user.role !== "admin" && req.user._id.toString() !== userId) {
+      return next(new AppError("You can only view your own gems", 403));
+    }
+  const countQuery = new ApiFeatures(getGemsByUserId(userId), req.query)
+    .filter()
+    .search();
+
+  const totalItems = await countQuery.mongooseQuery.countDocuments();
+
+  const apifeatures = new ApiFeatures(getGemsByUserId(userId), req.query)
+    .filter()
+    .search()
+    .sort()
+    .fields()
+    .paginate();
+
+  const result = await apifeatures.mongooseQuery
+    .populate("createdBy", "firstName lastName email")
+    .populate("category", "categoryName categoryImage");
+
+  const totalPages = Math.ceil(totalItems / apifeatures.limit);
+
+  return res.status(200).json({
+    message: "success",
+    page: apifeatures.page,
+    totalItems,
+    totalPages,
+    result,
+  });
+});
+
+const changeGemStatus = catchAsyncError(async (req, res, next) => {
+  const {gemId} = req.params;
+  const { status } = req.body;
+
+  let result = await getGem(gemId);
+  if (!result) return next(new AppError(`Gem not found`, 404));
+
+
+  const updatedGem = await updateTheGem(gemId, { status });
+  res.status(200).json({ message: `Gem status updated to ${status} successfully`, result: updatedGem });
+
 });
 
 const createGem = catchAsyncError(async (req, res, next) => {
@@ -118,4 +195,4 @@ const deleteGem = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ message: "Gem deleted successfully", result });
 });
 
-export { getAllGems, getGemById, createGem, updateGem, deleteGem };
+export { getAllGems, getGemById,getAllGemsForCategory, getAllGemsForUser,changeGemStatus, createGem, updateGem, deleteGem };
