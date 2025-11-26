@@ -5,6 +5,7 @@ import * as voucherRepository from "../repository/voucher.repository.js";
 import * as transactionVoucherRepository from "../repository/transactionVocuher.repository.js";
 import voucherTypes from "../utils/voucherTypes.js";
 import QRCode  from "qrcode"
+import { getGem } from "../repository/gem.repo.js";
 
 
 // const createVoucherForAllSubcribedUsers = catchAsyncError(async (req, res) => {
@@ -18,22 +19,33 @@ import QRCode  from "qrcode"
 //     const getAllSubscribedUsers = [];
 // })
 
-const createVoucherForUser = catchAsyncError(async(req, res) => {
+const createVoucherForUser = catchAsyncError(async(req, res, next) => {
+    console.log("create voucher endpoint requested");
     const userId = req.user._id;
     const gemId = req.params.gemId;
-    const gemDiscount = await getGem(gemId).discountPremium;
+    const gem = await getGem(gemId);
+    const gemDiscountGold = gem.discountGold;
+    const gemDiscountPlatinum = gem.discountPlatinum;
+    let gemDiscount = 0;
 
     if(!gemId) {
         return next(new AppError("Please provide gem id", 400));
     }
 
-    const userSubsciptionType = getUserById(userId).subscription;
+
+    const userSubsciptionType = req.user.subscription;
     //get subcribtion type from user id
     //get discount of the gem based on the subscription type
-
-    if(!voucherTypes[userSubsciptionType]) {
-        return next(new AppError("User not subsriped", 400));
+    if(userSubsciptionType === "gold") {
+        gemDiscount = gemDiscountGold;
     }
+    else if(userSubsciptionType === 'platinum') {
+        gemDiscount = gemDiscountPlatinum;
+    }
+
+    // if(!voucherTypes[userSubsciptionType]) {
+    //     return next(new AppError("User not subsriped", 400));
+    // }
     //check is user already has a voucher for this gem
     const existingVoucher = await voucherRepository.getVoucherByUserIdAndGemId(userId, gemId);
     if(existingVoucher) {
@@ -43,12 +55,12 @@ const createVoucherForUser = catchAsyncError(async(req, res) => {
     const voucher = {
         code: voucherCode,
         discount: gemDiscount,
-        expirYdate: new Date(new Date().setHours(new Date().getHours() + 24)),
+        expiryDate: new Date(new Date().setHours(new Date().getHours() + 24)),
         userId: userId,
         gemId: gemId,
         qrCode: ""
     }
-    const qrUrl = await QRCode.toDataURL(voucherCode);
+    const qrUrl = await QRCode.toDataURL("http://localhost:5137/admin/"+voucherCode);
     voucher.qrCode = qrUrl;
     const createdVoucher = await voucherRepository.createVoucher(voucher);
     res.status(201).json({
@@ -86,8 +98,8 @@ const redeemVoucher = catchAsyncError(async (req, res, next) => {
         return res.status(200).json({message: "Voucher redemption rejected"});
     }
     const voucherData = {
-        ...voucher,
-        desicion: desicion,
+        ...voucher._doc,
+        decision: desicion,
         admin: req.user._id,
         redeemedAt: new Date()
     }
@@ -95,7 +107,7 @@ const redeemVoucher = catchAsyncError(async (req, res, next) => {
     const deletedVoucher = await voucherRepository.deleteVoucherByCode(code);
     if(deletedVoucher) {
         return res.status(200).json({transactionedVocuher});
-    }
+    } res.status(500).json({message: "Error while redeeming voucher"});
 })
 
 

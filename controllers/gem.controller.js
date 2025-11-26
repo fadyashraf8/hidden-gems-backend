@@ -107,10 +107,9 @@ const deleteGem = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   let result = await getGem(id);
   if (!result) return next(new AppError(`Gem not found`, 404));
-
   if (
     req.user.role !== "admin" &&
-    req.user._id.toString() !== result.createdBy.toString()
+    req.user._id.toString() !== result.createdBy?.toString()
   ) {
     return next(new AppError(`You are not allowed to delete this gem`, 403));
   }
