@@ -85,7 +85,7 @@ const updateUser = catchAsyncError(async (req, res, next) => {
     return next(new AppError("You are not allowed to update this user", 403));
   }
 
-  const allowedUpdates = ["firstName", "lastName", "email", "phoneNumber", "image"];
+  const allowedUpdates = ["firstName", "lastName", "email", "phoneNumber", "image","role","subscription","verified"];
 
   for (let key of allowedUpdates) {
     if (req.body[key] !== undefined) {
