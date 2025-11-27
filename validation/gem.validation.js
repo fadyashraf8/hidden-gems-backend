@@ -18,6 +18,7 @@ export const gemSchema = Joi.object({
 export const gemUpdateSchema = Joi.object({
   name: Joi.string().min(3).max(100).optional(),
   images: Joi.array().items(Joi.string().uri()).optional(),
+  oldImages: Joi.array().items(Joi.string()).optional(),   
   gemLocation: Joi.string().optional(),
   description: Joi.string().min(10).optional(),
   category: Joi.string().hex().length(24).optional(),
