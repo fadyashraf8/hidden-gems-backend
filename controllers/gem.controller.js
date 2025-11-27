@@ -12,6 +12,7 @@ import {
   getGemsByUserId,
   getGemsByCategoryId,
 } from "../repository/gem.repo.js";
+import { createEmbeddings } from "../ai/createEmbeddings.js";
 
 const getAllGems = catchAsyncError(async (req, res, next) => {
   const countQuery = new ApiFeatures(getGemsQuery(), req.query)
@@ -157,6 +158,8 @@ const createGem = catchAsyncError(async (req, res, next) => {
     createdBy: req.user._id,
   };
   let result = await createTheGem(gemData);
+  result.embeddings = await createEmbeddings(result.description);
+  await result.save();
 
   if (status === "accepted") {
     res.status(200).json({ message: "Gem created successfully", result });
@@ -226,6 +229,7 @@ const deleteGem = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ message: "Gem deleted successfully", result });
 });
 
+
 export {
   getAllGems,
   getGemById,
@@ -234,5 +238,5 @@ export {
   changeGemStatus,
   createGem,
   updateGem,
-  deleteGem,
+  deleteGem
 };

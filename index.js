@@ -14,6 +14,7 @@ import gemRouter from "./route/gem.route.js";
 import { createOnlineSession } from "./controllers/auth.controller.js";
 import ratingRouter from "./route/rating.route.js";
 import contactRouter from "./route/contactUs.route.js";
+import aiRouter from './route/ai.route.js';
 dotenv.config();
 
 const app = express();
@@ -44,6 +45,7 @@ app.use('/vouchers', voucherRouter);
 app.use("/ratings", ratingRouter);
 app.use("/contactus", contactRouter);
 
+app.use('/ai', aiRouter);
 
 app.use(globalMiddleWare);
 
