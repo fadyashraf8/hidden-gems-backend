@@ -158,6 +158,8 @@ const createGem = catchAsyncError(async (req, res, next) => {
     createdBy: req.user._id,
   };
   let result = await createTheGem(gemData);
+  result.embeddings = await createEmbeddings(result.description);
+  await result.save();
 
   if (status === "accepted") {
     res.status(200).json({ message: "Gem created successfully", result });
