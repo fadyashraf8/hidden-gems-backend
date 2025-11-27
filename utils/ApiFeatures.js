@@ -60,7 +60,12 @@ search() {
                 { lastName: { $regex: this.queryString.keyword, $options: "i" } },
                 { email: { $regex: this.queryString.keyword, $options: "i" } },
                 { phoneNumber: { $regex: this.queryString.keyword, $options: "i" } },
+                { categoryName: { $regex: this.queryString.keyword, $options: "i" } },
+                
                 { name: { $regex: this.queryString.keyword, $options: "i" } },
+                { gemLocation: { $regex: this.queryString.keyword, $options: "i" } },
+                
+
             ]
         })
     }

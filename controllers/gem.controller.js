@@ -163,23 +163,37 @@ const updateGem = catchAsyncError(async (req, res, next) => {
     return next(new AppError(`You are not allowed to update this gem`, 403));
   }
 
-  if (req.user.role == "admin") {
-    result = await updateTheGem(id, req.body);
+  const updateData = { ...req.body };
+  
+  let finalImages = [];
+  
+  if (req.body.oldImages) {
+    finalImages = Array.isArray(req.body.oldImages) 
+      ? req.body.oldImages 
+      : [req.body.oldImages];
+  }
+  
+  if (req.files?.images && req.files.images.length > 0) {
+    const newImages = req.files.images.map(obj => obj.filename);
+    finalImages = [...finalImages, ...newImages];
+  }
+  
+  if (finalImages.length > 0) {
+    updateData.images = finalImages;
+  }
+
+  if (req.user.role === "admin") {
+    result = await updateTheGem(id, updateData);
     res.status(200).json({ message: "Gem updated successfully", result });
   } else {
-    const updateData = {
-      ...req.body,
-      status: "pending",
-    };
-    // console.log("updateData:", updateData);
+    updateData.status = "pending";
     result = await updateTheGem(id, updateData);
     res.status(200).json({
-        message: "your gem updated successfully, waiting for admin approval ",
-        result,
-      });
+      message: "Your gem updated successfully, waiting for admin approval",
+      result,
+    });
   }
 });
-
 const deleteGem = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   let result = await getGem(id);
