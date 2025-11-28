@@ -16,6 +16,6 @@ export const contactUpdateSchema = Joi.object({
 
 export const contactReplySchema = Joi.object({
   message: Joi.string().min(5).max(1000).required(),
-  sendEmail: Joi.boolean().default(true),
+  sentEmail: Joi.boolean().default(true),
 });
 

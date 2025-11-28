@@ -16,6 +16,7 @@ import {
 } from "../repository/contactUs.repo.js";
 
 
+
 // User: Submit complaint
 const contactSubmission = catchAsyncError(async (req, res, next) => {
   const { firstName, lastName, email, message } = req.body;
@@ -191,7 +192,7 @@ const getUserContactsByEmailForAdmin = catchAsyncError(async (req, res, next) =>
 // Admin: Add reply to complaint
 const addReplyToContact = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const { message, sendEmail } = req.body;
+  const { message, sentEmail } = req.body;
   const adminId = req.user._id;
 
   let contact = await getContact(id);
@@ -200,15 +201,18 @@ const addReplyToContact = catchAsyncError(async (req, res, next) => {
   const replyData = {
     message,
     repliedBy: adminId,
-    sentEmail: sendEmail,
+    sentEmail: sentEmail,
   };
 
   let result = await adminAddReply(id, replyData);
 
   // Send email to user if requested
-  if (sendEmail) {
+  if (sentEmail) {
     try {
-      const emailSubject = `Update on your complaint - Gemsy`;
+      console.log(`Attempting to send email to: ${contact.email}`);
+
+        const emailSubject =
+            "Update on your complaint - Gemsy";
       const emailHtml = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #DD0303;">Update on Your Complaint</h2>
@@ -228,10 +232,10 @@ const addReplyToContact = catchAsyncError(async (req, res, next) => {
         </div>
       `;
 
-      await sendEmail(contact.email, emailSubject, emailHtml);
-
+      await sendEmail(contact.email , emailSubject , emailHtml);
+      console.log("Email sent successfully to user");
       // Update the reply to mark email as sent
-      await updateContact(
+      result = await updateContact(
         id,
         {
           "adminReplies.$[elem].sentEmail": true,
@@ -251,7 +255,9 @@ const addReplyToContact = catchAsyncError(async (req, res, next) => {
   }
 
   res.status(200).json({
-    message: "Reply added successfully",
+    message: sendEmail
+      ? "Reply added successfully and email sent"
+      : "Reply added successfully",
     result,
   });
 });

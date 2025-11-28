@@ -18,6 +18,7 @@ import {
   contactReplySchema,
 } from "../validation/contactUs.validation.js";
 import { allowedTo, protectedRoutes } from "../controllers/auth.controller.js";
+import { sendEmail } from "../emails/user.email.js";
 
 const contactRouter = express.Router();
 
@@ -55,5 +56,25 @@ contactRouter.route("/admin/:id")
   
 contactRouter.route("/admin/email/:email")
   .get(protectedRoutes, allowedTo("admin"), getUserContactsByEmailForAdmin);
+
+
+contactRouter.route("/test-email").post(async (req, res) => {
+  try {
+    const { to, subject, message } = req.body;
+
+    const html = `
+        <div style="font-family: sans-serif;">
+          <h2>Test Email</h2>
+          <p>This is a test email from Gemsy.</p>
+          <p>${message}</p>
+        </div>
+      `;
+
+    const result = await sendEmail(to, subject, html);
+    res.json({ success: true, message: "Test email sent", result });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 export default contactRouter;

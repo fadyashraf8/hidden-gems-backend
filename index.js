@@ -44,7 +44,6 @@ app.use("/gems", gemRouter);
 app.use('/vouchers', voucherRouter);
 app.use("/ratings", ratingRouter);
 app.use("/contactus", contactRouter);
-
 app.use('/ai', aiRouter);
 
 app.use(globalMiddleWare);
