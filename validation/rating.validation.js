@@ -5,7 +5,7 @@ export const ratingSchema = Joi.object({
       'string.hex': 'Gem ID must be a valid MongoDB ObjectId',
       'string.length': 'Gem ID must be 24 characters long'
       }),
-     reviewId: Joi.string().hex().length(24).required().messages({
+     reviewId: Joi.string().hex().length(24).messages({
       'string.hex': 'Review ID must be a valid MongoDB ObjectId',
       'string.length': 'Review ID must be 24 characters long'
       }),

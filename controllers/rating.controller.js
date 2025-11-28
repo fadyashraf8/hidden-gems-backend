@@ -87,10 +87,11 @@ const getGemAvgRating = catchAsyncError(async (req, res, next) => {
 
 // mainly for User's Use 
 const createRating = catchAsyncError(async (req, res, next) => {
-    console.log("req.body:", req.body); 
-    console.log("req.user:", req.user);
+  console.log("req.body:", req.body); 
+  console.log("req.user:", req.user);
+  
     
-    let isExist = await getTheUserRatingForGem(req.user._id, req.body.gem);
+  let isExist = await getTheUserRatingForGem(req.user._id, req.body.gem);
     if(isExist){
         return next(new AppError("You have already rated this gem", 400));
     }
