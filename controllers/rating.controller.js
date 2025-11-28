@@ -25,6 +25,7 @@ const getRatingById = catchAsyncError(async (req, res, next) => {
 //for Admin's & User's Use
 const getAllGemRatings = catchAsyncError(async (req, res, next) => {
     const { gemId } = req.params;
+    // console.log(gemId);
     let ratings = await getTheGemRatings(gemId);
     // 
     return res
@@ -98,6 +99,7 @@ const createRating = catchAsyncError(async (req, res, next) => {
       gem: req.body.gem, 
       rating: req.body.rating,
       createdBy: req.user._id,
+      reviewId: req.body.reviewId || null,
     };
     const rating = await createTheRating(ratingData);
 

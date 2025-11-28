@@ -16,7 +16,12 @@ const ratingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
     required: true,
-  }
+  },
+  reviewId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Review",
+    // required: true,
+  },
 },{ timestamps: true});
 
 export const ratingModel = mongoose.model("rating", ratingSchema);

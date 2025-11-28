@@ -76,6 +76,10 @@ const deleteTheRating = async (id) => {
      return await ratingModel.findByIdAndDelete(id);   
 };
 
+const getRatingNumberByReviewId = async (reviewId) => {
+  const ratingDoc  = await ratingModel.findOne({reviewId: reviewId});
+  return ratingDoc ? ratingDoc.rating : null;
+}
 
 
 export {
@@ -87,5 +91,6 @@ export {
   getUserRatings,
   getTheUserRatingForGem,
   getTheGemAvgRating,
-  updateGemAvgRating
+  updateGemAvgRating,
+  getRatingNumberByReviewId
 };
