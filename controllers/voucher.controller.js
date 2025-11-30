@@ -62,6 +62,8 @@ const createVoucherForUser = catchAsyncError(async(req, res, next) => {
     }
     const qrUrl = await QRCode.toDataURL("http://localhost:5137/admin/"+voucherCode);
     voucher.qrCode = qrUrl;
+    console.log("qrUrl",qrUrl);
+    
     const createdVoucher = await voucherRepository.createVoucher(voucher);
     res.status(201).json({
         createdVoucher

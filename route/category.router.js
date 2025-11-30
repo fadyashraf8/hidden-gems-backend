@@ -8,7 +8,7 @@ const categoryRouter=express.Router();
 
 categoryRouter.route('/')
 .post(protectedRoutes,allowedTo('admin'),uploadSingleFile("categoryImage","category"),categoryController.createCategory)
-.get(protectedRoutes,categoryController.getAllCategories)
+.get(categoryController.getAllCategories)
 
 
 
