@@ -1,6 +1,7 @@
 import express from "express";
 import * as reviewController from "../controllers/review.controller.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
+import { uploadMultipleFile } from "../middleware/fileUpload.js";
 const router = express.Router();
 
 //get all reviews for a place

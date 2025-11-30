@@ -64,6 +64,7 @@ const getAllReviewsByGemId = catchAsyncError(async (req, res, next) => {
 
 const postReview = catchAsyncError(async (req, res, next) => {
     const reviewObj = req.body;
+    const images = req.files.images.map(file => file.filename) || [];
     //check gemId exist
     const createdReview =  await createReview(reviewObj);
     logActivity(req.user, "user posted a review", "user created a review with " + createdReview.description, false);
