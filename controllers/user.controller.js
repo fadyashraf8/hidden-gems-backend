@@ -1,13 +1,15 @@
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { userModel } from "../models/user.js";
 import { AppError } from "../utils/AppError.js";
-
 import bcrypt from "bcrypt";
 import { ApiFeatures } from "../utils/ApiFeatures.js";
+import { uploadToCloudinary } from "../middleware/cloudinaryConfig.js";     
 
 const createUser = catchAsyncError(async (req, res, next) => {
   let isExist = await userModel.findOne({ email: req.body.email });
   if (isExist) return next(new AppError(`Email already exists`, 400));
+  
+  const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "user");
 
   let hashedPassword = bcrypt.hashSync(
     req.body.password,
@@ -17,7 +19,7 @@ const createUser = catchAsyncError(async (req, res, next) => {
   let result = new userModel({
     ...req.body,
     password: hashedPassword,
-    image: req.file?.filename,
+    image: cloudinaryResult.secure_url,
     verified: true,
   });
 
@@ -71,7 +73,6 @@ const getAllUsers = catchAsyncError(async (req, res, next) => {
   });
 });
 
-
 const updateUser = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
 
@@ -113,8 +114,9 @@ const updateUser = catchAsyncError(async (req, res, next) => {
     }
   }
 
-  if (req.file?.filename) {
-    result.image = req.file.filename;
+  if (req.file?.buffer) { 
+    const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "user");
+    result.image = cloudinaryResult.secure_url;
   }
 
   await result.save();
@@ -124,8 +126,6 @@ const updateUser = catchAsyncError(async (req, res, next) => {
     result,
   });
 });
-
-
 
 const deleteUser = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;

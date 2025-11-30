@@ -13,6 +13,7 @@ import {
   getGemsByCategoryId,
 } from "../repository/gem.repo.js";
 import { createEmbeddings } from "../ai/createEmbeddings.js";
+import { uploadToCloudinary } from "../middleware/cloudinaryConfig.js";
 
 const getAllGems = catchAsyncError(async (req, res, next) => {
   const countQuery = new ApiFeatures(getGemsQuery(), req.query)
@@ -148,15 +149,22 @@ const createGem = catchAsyncError(async (req, res, next) => {
   if (req.user.role === "admin") {
     status = "accepted";
   }
-  // console.log("req.body:", req.files);
-  // console.log(req.files?.images);
+
+  let uploadedImages = [];
+  if (req.files?.images && req.files.images.length > 0) {
+    for (const file of req.files.images) {
+      const cloudinaryResult = await uploadToCloudinary(file.buffer, "gems");
+      uploadedImages.push(cloudinaryResult.secure_url);
+    }
+  }
 
   let gemData = {
     ...req.body,
-    images: req.files?.images?.map((obj) => obj.filename),
+    images: uploadedImages, 
     status: status,
     createdBy: req.user._id,
   };
+  
   let result = await createTheGem(gemData);
   result.embeddings = await createEmbeddings(result.description);
   await result.save();
@@ -170,7 +178,6 @@ const createGem = catchAsyncError(async (req, res, next) => {
     });
   }
 });
-
 const updateGem = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   let result = await getGem(id);
@@ -194,8 +201,10 @@ const updateGem = catchAsyncError(async (req, res, next) => {
   }
   
   if (req.files?.images && req.files.images.length > 0) {
-    const newImages = req.files.images.map(obj => obj.filename);
-    finalImages = [...finalImages, ...newImages];
+    for (const file of req.files.images) {
+      const cloudinaryResult = await uploadToCloudinary(file.buffer, "gems");
+      finalImages.push(cloudinaryResult.secure_url);
+    }
   }
   
   if (finalImages.length > 0) {

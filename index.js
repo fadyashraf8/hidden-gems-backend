@@ -15,31 +15,33 @@ import { createOnlineSession } from "./controllers/auth.controller.js";
 import ratingRouter from "./route/rating.route.js";
 import contactRouter from "./route/contactUs.route.js";
 import aiRouter from "./route/ai.route.js";
+
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
-mongoose
-  .connect(process.env.DB_URL)
-  .then(() => console.log("DB Connected"))
-  .catch((err) => console.error(" DB Connection Failed:", err));
 
-app.use(
-  cors({
-    origin: (origin, callback) => callback(null, origin),
-    credentials: true,
-  })
-);
+// DB Connection
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected) return;
+  try {
+    await mongoose.connect(process.env.DB_URL, { serverSelectionTimeoutMS: 30000 });
+    isConnected = true;
+    console.log("DB Connected");
+  } catch (err) {
+    console.error("DB Connection Failed:", err);
+  }
+};
+await connectDB();
 
-app.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  createOnlineSession
-);
+// Middleware
+app.use(cors({ origin: (origin, cb) => cb(null, origin), credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static("uploads"));
 
+// Routes
+app.post("/webhook", express.raw({ type: "application/json" }), createOnlineSession);
 app.get("/", (req, res) => res.send("Hello World!"));
 app.use("/auth", authRouter);
 app.use("/activity", activityRouter);
@@ -51,7 +53,14 @@ app.use("/vouchers", voucherRouter);
 app.use("/ratings", ratingRouter);
 app.use("/contactus", contactRouter);
 app.use("/ai", aiRouter);
-
 app.use(globalMiddleWare);
 
-app.listen(port, () => console.log(`Server running on port ${port}`));
+// ✅ شرط للتشغيل المحلي
+if (process.env.NODE_ENV !== "production") {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => console.log(`Local server running on port ${port}`));
+}
+
+// ✅ للتشغيل على Vercel
+import serverlessExpress from "@vendia/serverless-express";
+export const handler = serverlessExpress({ app });

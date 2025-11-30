@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import { sendEmail } from "../emails/user.email.js";
 import Stripe from "stripe";
 import { OAuth2Client } from "google-auth-library";
+import { uploadToCloudinary } from "../middleware/cloudinaryConfig.js";
 
 const googleClient = new OAuth2Client(process.env.CLIENT_ID);
 
@@ -14,6 +15,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const signUp = catchAsyncError(async (req, res, next) => {
   let isExist = await userModel.findOne({ email: req.body.email });
   if (isExist) return next(new AppError(`Email already exists`, 400));
+       const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "user");
+  
 
   let hashedPassword = bcrypt.hashSync(
     req.body.password,
@@ -23,7 +26,7 @@ const signUp = catchAsyncError(async (req, res, next) => {
   let result = new userModel({
     ...req.body,
     password: hashedPassword,
-    image: req.file?.filename,
+    image: cloudinaryResult.secure_url,
     code: Math.floor(100000 + Math.random() * 900000).toString(),
   });
 

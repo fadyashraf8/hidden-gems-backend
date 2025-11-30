@@ -6,16 +6,18 @@ import { AppError } from "../utils/AppError.js";
 
 import { ApiFeatures } from "../utils/ApiFeatures.js";
 import { categoryModel } from "../models/category.js";
+import { uploadToCloudinary } from "../middleware/cloudinaryConfig.js";
 
 const createCategory = catchAsyncError(async (req, res, next) => {
   let isExist = await categoryModel.findOne({ categoryName: req.body.categoryName });
   if (isExist) return next(new AppError(`Category already exists`, 400));
 
- 
+     const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "category");
+
 
   let result = new categoryModel({
     categoryName: req.body.categoryName,
-    categoryImage: req.file?.filename,
+    categoryImage: cloudinaryResult.secure_url,
     createdBy: req.user._id,
   });
 
@@ -78,8 +80,9 @@ const updateCategory = catchAsyncError(async (req, res, next) => {
     category.categoryName = req.body.categoryName;
   }
 
-  if (req.file?.filename) {
-    category.categoryImage = req.file.filename;
+  if (req.file?.buffer) { 
+    const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "category");
+    category.categoryImage = cloudinaryResult.secure_url;
   }
 
   await category.save();
@@ -89,7 +92,6 @@ const updateCategory = catchAsyncError(async (req, res, next) => {
     category,
   });
 });
-
 
 const deleteCategory = catchAsyncError(
     async (req, res, next) => {
