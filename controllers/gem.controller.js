@@ -186,7 +186,7 @@ const updateGem = catchAsyncError(async (req, res, next) => {
   
   if (
     req.user.role !== "admin" &&
-    req.user._id.toString() !== result.createdBy._id.toString()
+    req.user._id.toString() !== result.createdBy?._id.toString()
   ) {
     return next(new AppError(`You are not allowed to update this gem`, 403));
   }
@@ -223,8 +223,8 @@ const deleteGem = catchAsyncError(async (req, res, next) => {
   let result = await getGem(id);
   if (!result) return next(new AppError(`Gem not found`, 404));
   if (
-    req.user.role !== "admin" &&
-    req.user._id.toString() !== result.createdBy?.toString()
+        req.user.role !== "admin" &&
+    req.user._id.toString() !== result.createdBy?._id.toString()
   ) {
     return next(new AppError(`You are not allowed to delete this gem`, 403));
   }
