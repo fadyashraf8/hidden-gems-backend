@@ -62,6 +62,8 @@ const createVoucherForUser = catchAsyncError(async(req, res, next) => {
     }
     const qrUrl = await QRCode.toDataURL("http://localhost:5137/admin/"+voucherCode);
     voucher.qrCode = qrUrl;
+    console.log("qrUrl",qrUrl);
+    
     const createdVoucher = await voucherRepository.createVoucher(voucher);
     res.status(201).json({
         createdVoucher
@@ -89,8 +91,8 @@ const redeemVoucher = catchAsyncError(async (req, res, next) => {
         return next(new AppError("Vocuher not found", 404));
     }
     if(new Date() > voucher.expiryDate){
-        console.log(new Date());
-        console.log(voucher.expiryDate);
+        // console.log(new Date());
+        // console.log(voucher.expiryDate);
         return next(new AppError("Voucher has expired", 400));
     }
     

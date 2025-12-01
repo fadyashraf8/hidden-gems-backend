@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import { sendEmail } from "../emails/user.email.js";
 import Stripe from "stripe";
 import { OAuth2Client } from "google-auth-library";
+import { uploadToCloudinary } from "../middleware/cloudinaryConfig.js";
 
 const googleClient = new OAuth2Client(process.env.CLIENT_ID);
 
@@ -14,6 +15,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const signUp = catchAsyncError(async (req, res, next) => {
   let isExist = await userModel.findOne({ email: req.body.email });
   if (isExist) return next(new AppError(`Email already exists`, 400));
+       const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "user");
+  
 
   let hashedPassword = bcrypt.hashSync(
     req.body.password,
@@ -23,7 +26,7 @@ const signUp = catchAsyncError(async (req, res, next) => {
   let result = new userModel({
     ...req.body,
     password: hashedPassword,
-    image: req.file?.filename,
+    image: cloudinaryResult.secure_url,
     code: Math.floor(100000 + Math.random() * 900000).toString(),
   });
 
@@ -54,10 +57,14 @@ const signIn = catchAsyncError(async (req, res, next) => {
   if (!user.verified)
     return next(new AppError(`Please verify your email first`, 403));
 
+  console.log("user", user);
+  
   let token = jwt.sign({ userInfo: user }, process.env.JWT_KEY, {
     expiresIn: "7d",
   });
 
+
+  
   res
     .cookie("token", token, {
       httpOnly: true,
@@ -168,6 +175,13 @@ const getCurrentUser = catchAsyncError(async (req, res, next) => {
       image: req.user.image,
       subscription: req.user.subscription,
       points: req.user.points,
+      googleId: req.user.googleId,
+      stripeCustomerId: req.user.stripeCustomerId,
+      subscriptionStatus: req.user.subscriptionStatus,
+      lastPaymentDate: req.user.lastPaymentDate,
+      subscriptionEndDate: req.user.subscriptionEndDate,
+      stripeSubscriptionId: req.user.stripeSubscriptionId,
+
     },
   });
 });
@@ -259,10 +273,17 @@ export const checkoutPlatinum = async (req, res) => {
 };
 
 export const createOnlineSession = async (request, response) => {
+  console.log("🎯 Webhook endpoint hit!");
+  
   let event;
 
   if (process.env.WEBHOOK_SECRET) {
     const signature = request.headers["stripe-signature"];
+    
+    if (!signature) {
+      console.log("❌ No stripe-signature header found");
+      return response.status(400).send("No signature");
+    }
 
     try {
       event = stripe.webhooks.constructEvent(
@@ -270,60 +291,133 @@ export const createOnlineSession = async (request, response) => {
         signature,
         process.env.WEBHOOK_SECRET
       );
+      console.log("✅ Webhook signature verified");
     } catch (err) {
-      console.log("error:", err.message);
+      console.log("❌ Webhook signature verification failed:", err.message);
       return response.status(400).send(`Webhook Error: ${err.message}`);
     }
   } else {
+    console.log("⚠️ Warning: No WEBHOOK_SECRET - using raw body");
     try {
       const bodyString = request.body.toString("utf8");
       event = JSON.parse(bodyString);
     } catch (parseError) {
-      console.log("error:", parseError.message);
+      console.log("❌ JSON parse error:", parseError.message);
       return response.status(400).send("Invalid request body");
     }
   }
 
-  // 1. عند اكتمال الدفع لأول مرة
+  console.log("📩 Event type:", event.type);
+  console.log("📦 Full event data:", JSON.stringify(event.data.object, null, 2));
+
+  // ✅ الطريقة الصح: استخدم checkout.session.completed بعد الدفع
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
+    
+    console.log("💳 Full session object:", JSON.stringify(session, null, 2));
+    
     const userId = session.client_reference_id;
-    const type = session.metadata.type;
-    const plan = session.metadata.plan;
+    const type = session.metadata?.type;
+    const plan = session.metadata?.plan;
     const stripeCustomerId = session.customer;
-    const stripeSubscriptionId = session.subscription; // ✅ مهم جداً
+    
+    // ⚠️ هنا المشكلة: session.subscription ممكن يكون null
+    // الحل: نستناه من event تاني أو نجيبه بعدين
+    let stripeSubscriptionId = session.subscription;
 
-    if (type === "owner") {
-      await userModel.findByIdAndUpdate(userId, {
-        role: "owner",
-        stripeCustomerId: stripeCustomerId,
-        stripeSubscriptionId: stripeSubscriptionId,
-        subscriptionStatus: "active",
-        lastPaymentDate: new Date(),
-      });
+    console.log("📊 Extracted data:", { 
+      userId, 
+      type, 
+      plan, 
+      stripeCustomerId, 
+      stripeSubscriptionId 
+    });
+
+    if (!userId) {
+      console.log("❌ No userId in session");
+      return response.status(400).send("No user ID");
     }
 
-    if (type === "user" && plan === "gold") {
-      await userModel.findByIdAndUpdate(userId, {
-        subscription: "gold",
-        stripeCustomerId: stripeCustomerId,
-        stripeSubscriptionId: stripeSubscriptionId,
-        subscriptionStatus: "active",
-        lastPaymentDate: new Date(),
-      });
+    // ✅ لو الـ subscription ID موجود، استخدمه
+    // لو مش موجود، هنجيبه من الـ customer.subscription.created event
+    const updateData = {
+      stripeCustomerId,
+      subscriptionStatus: "active",
+      lastPaymentDate: new Date(),
+    };
+
+    // فقط أضف stripeSubscriptionId لو موجود
+    if (stripeSubscriptionId) {
+      updateData.stripeSubscriptionId = stripeSubscriptionId;
     }
 
-    if (type === "user" && plan === "platinum") {
-      await userModel.findByIdAndUpdate(userId, {
-        subscription: "platinum",
-        stripeCustomerId: stripeCustomerId,
-        stripeSubscriptionId: stripeSubscriptionId,
-        subscriptionStatus: "active",
-        lastPaymentDate: new Date(),
-      });
+    try {
+      if (type === "owner") {
+        const updated = await userModel.findByIdAndUpdate(
+          userId, 
+          {
+            ...updateData,
+            role: "owner",
+          },
+          { new: true }
+        );
+        console.log("✅ Owner subscription activated:", updated);
+      }
+
+      if (type === "user" && plan === "gold") {
+        const updated = await userModel.findByIdAndUpdate(
+          userId,
+          {
+            ...updateData,
+            subscription: "gold",
+          },
+          { new: true }
+        );
+        console.log("✅ Gold subscription activated:", updated);
+      }
+
+      if (type === "user" && plan === "platinum") {
+        const updated = await userModel.findByIdAndUpdate(
+          userId,
+          {
+            ...updateData,
+            subscription: "platinum",
+          },
+          { new: true }
+        );
+        console.log("✅ Platinum subscription activated:", updated);
+      }
+    } catch (error) {
+      console.error("❌ Database update failed:", error);
+      return response.status(500).send("Database error");
     }
 
-    console.log(`✅ Subscription activated for user: ${userId}`);
+    return response.status(200).send("ok");
+  }
+
+  // ✅ أضف event جديد للحصول على الـ subscription ID
+  if (event.type === "customer.subscription.created") {
+    const subscription = event.data.object;
+    const stripeCustomerId = subscription.customer;
+    const stripeSubscriptionId = subscription.id;
+
+    console.log("🆕 Subscription created:", { 
+      stripeCustomerId, 
+      stripeSubscriptionId 
+    });
+
+    try {
+      // حدّث الـ user بالـ subscription ID
+      await userModel.findOneAndUpdate(
+        { stripeCustomerId },
+        { stripeSubscriptionId },
+        { new: true }
+      );
+      console.log("✅ Subscription ID updated for customer:", stripeCustomerId);
+    } catch (error) {
+      console.error("❌ Failed to update subscription ID:", error);
+    }
+
     return response.status(200).send("ok");
   }
 
@@ -331,12 +425,19 @@ export const createOnlineSession = async (request, response) => {
   if (event.type === "invoice.payment_succeeded") {
     const invoice = event.data.object;
     const stripeCustomerId = invoice.customer;
+    const stripeSubscriptionId = invoice.subscription;
+
+    console.log("💰 Payment succeeded:", { 
+      stripeCustomerId, 
+      stripeSubscriptionId 
+    });
 
     await userModel.findOneAndUpdate(
       { stripeCustomerId },
       { 
         subscriptionStatus: "active",
-        lastPaymentDate: new Date()
+        lastPaymentDate: new Date(),
+        stripeSubscriptionId // تحديث الـ subscription ID هنا كمان
       }
     );
 
@@ -354,7 +455,6 @@ export const createOnlineSession = async (request, response) => {
       { subscriptionStatus: "past_due" }
     );
 
-    // ممكن تبعت إيميل تحذير للعميل
     const user = await userModel.findOne({ stripeCustomerId });
     if (user) {
       await sendEmail(
@@ -376,7 +476,6 @@ export const createOnlineSession = async (request, response) => {
     const user = await userModel.findOne({ stripeCustomerId });
     
     if (user) {
-      // لو كان owner يرجع user عادي
       if (user.role === "owner") {
         await userModel.findOneAndUpdate(
           { stripeCustomerId },
@@ -387,7 +486,6 @@ export const createOnlineSession = async (request, response) => {
           }
         );
       } else {
-        // لو user عادي يرجع free
         await userModel.findOneAndUpdate(
           { stripeCustomerId },
           { 
@@ -408,7 +506,7 @@ export const createOnlineSession = async (request, response) => {
     return response.status(200).send("ok");
   }
 
-  // 5. تحديث الاشتراك (Upgrade/Downgrade)
+  // 5. تحديث الاشتراك
   if (event.type === "customer.subscription.updated") {
     const subscription = event.data.object;
     const stripeCustomerId = subscription.customer;
@@ -417,7 +515,6 @@ export const createOnlineSession = async (request, response) => {
     let subscriptionType = "free";
     let userRole = "user";
 
-    // حدد نوع الاشتراك بناءً على الـ price ID
     if (newPlan === process.env.OWNER_PRICE_ID) {
       userRole = "owner";
     } else if (newPlan === process.env.GOLD_PRICE_ID) {
@@ -448,45 +545,9 @@ export const createOnlineSession = async (request, response) => {
     return response.status(200).send("ok");
   }
 
-  // 6. عند توقف محاولات الدفع بعد عدة فشل
-  if (event.type === "invoice.payment_action_required") {
-    const invoice = event.data.object;
-    const stripeCustomerId = invoice.customer;
-
-    await userModel.findOneAndUpdate(
-      { stripeCustomerId },
-      { subscriptionStatus: "incomplete" }
-    );
-
-    const user = await userModel.findOne({ stripeCustomerId });
-    if (user) {
-      await sendEmail(
-        user.email,
-        "Payment Action Required",
-        `<p>Your payment requires additional authentication. Please complete the payment process.</p>`
-      );
-    }
-
-    console.log(`⚠️ Payment action required for customer: ${stripeCustomerId}`);
-    return response.status(200).send("ok");
-  }
-
-  // 7. عند استرجاع الاشتراك (Reactivation)
-  if (event.type === "customer.subscription.resumed") {
-    const subscription = event.data.object;
-    const stripeCustomerId = subscription.customer;
-
-    await userModel.findOneAndUpdate(
-      { stripeCustomerId },
-      { subscriptionStatus: "active" }
-    );
-
-    console.log(`✅ Subscription resumed for customer: ${stripeCustomerId}`);
-    return response.status(200).send("ok");
-  }
-
   response.status(200).send("ok");
 };
+
 
 export const checkoutChange = async (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
@@ -496,6 +557,36 @@ export const checkoutChange = async (req, res) => {
     return_url: `${frontendUrl}/account`,
   });
   res.json({ url: portalSession.url });
+};
+export const cancelOwnerSubscription = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user._id);
+
+    if (!user || !user.stripeSubscriptionId) {
+      return res.status(400).json({ 
+        message: "No active subscription found" 
+      });
+    }
+
+    await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+
+    await userModel.findByIdAndUpdate(req.user._id, {
+      role: "user",
+      subscription: "free",
+      subscriptionStatus: "canceled",
+      stripeSubscriptionId: null,
+    });
+
+    res.json({ 
+      message: "Subscription cancelled successfully" 
+    });
+
+  } catch (error) {
+    console.error("Error cancelling subscription:", error);
+    res.status(500).json({ 
+      message: "Failed to cancel subscription" 
+    });
+  }
 };
 
 const googleLogin = catchAsyncError(async (req, res, next) => {

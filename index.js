@@ -1,8 +1,8 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import cookieParser from "cookie-parser"; 
-import cors from "cors"; 
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import { globalMiddleWare } from "./middleware/globalMiddleWare.js";
 import authRouter from "./route/auth.route.js";
 import userRouter from "./route/user.route.js";
@@ -14,25 +14,41 @@ import gemRouter from "./route/gem.route.js";
 import { createOnlineSession } from "./controllers/auth.controller.js";
 import ratingRouter from "./route/rating.route.js";
 import contactRouter from "./route/contactUs.route.js";
-import aiRouter from './route/ai.route.js';
+import aiRouter from "./route/ai.route.js";
+
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-app.use(cors({
-  origin: (origin, callback) => callback(null, origin), 
-  credentials: true,
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected) return;
+  try {
+    await mongoose.connect(process.env.DB_URL, { 
+      serverSelectionTimeoutMS: 30000,
+      bufferCommands: false
+    });
+    isConnected = true;
+    console.log("✅ DB Connected");
+  } catch (err) {
+    console.error("❌ DB Connection Failed:", err);
+  }
+};
+
+app.use(cors({ 
+  origin: (origin, cb) => cb(null, origin), 
+  credentials: true 
 }));
 
-app.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
+app.use(cookieParser());
+
+app.post("/webhook", 
+  express.raw({ type: "application/json" }), 
   createOnlineSession
 );
+
 app.use(express.json());
-app.use(cookieParser());
-app.use('/uploads', express.static('uploads'));
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => res.send("Hello World!"));
 app.use("/auth", authRouter);
@@ -41,15 +57,20 @@ app.use("/review", reviewRouter);
 app.use("/users", userRouter);
 app.use("/categories", categoryRouter);
 app.use("/gems", gemRouter);
-app.use('/vouchers', voucherRouter);
+app.use("/vouchers", voucherRouter);
 app.use("/ratings", ratingRouter);
 app.use("/contactus", contactRouter);
-app.use('/ai', aiRouter);
+app.use("/ai", aiRouter);
 
 app.use(globalMiddleWare);
 
-mongoose.connect(process.env.DB_URL)
-  .then(() => console.log("DB Connected"))
-  .catch((err) => console.error(" DB Connection Failed:", err));
+export default async function handler(req, res) {
+  await connectDB();
+  return app(req, res);
+}
 
-app.listen(port, () => console.log(`Server running on port ${port}`));
+if (process.env.NODE_ENV !== "production") {
+  await connectDB();
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => console.log(`🚀 Local server running on port ${port}`));
+}

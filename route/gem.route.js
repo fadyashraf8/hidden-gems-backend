@@ -7,38 +7,41 @@ import {
   updateGem,
   getAllGemsForCategory,
   getAllGemsForUser,
-  changeGemStatus
+  changeGemStatus,
 } from "../controllers/gem.controller.js";
-import { uploadMultipleFile } from "../middleware/fileUpload.js";
+import { uploadMultipleFiles } from "../middleware/fileUpload.js";
 import { validation } from "../middleware/validation.js";
 import { gemSchema, gemUpdateSchema } from "../validation/gem.validation.js";
 import { allowedTo, protectedRoutes } from "../controllers/auth.controller.js";
 
 const gemRouter = express.Router();
-let filedsArray=[ { name: 'images', maxCount: 10 }]
+let filedsArray = [{ name: "images", maxCount: 10 }];
 
+gemRouter.route("/category/:categoryId").get(getAllGemsForCategory);
+gemRouter.route("/user/:userId").get(protectedRoutes, getAllGemsForUser);
+gemRouter
+  .route("/:gemId/status")
+  .put(protectedRoutes, allowedTo("admin"), changeGemStatus);
 
-gemRouter.route("/category/:categoryId").get(getAllGemsForCategory); 
-gemRouter.route("/user/:userId").get(protectedRoutes, getAllGemsForUser); 
-gemRouter.route("/:gemId/status")
-         .put(protectedRoutes, allowedTo("admin"), changeGemStatus);
+gemRouter
+  .route("/")
+  .post(
+    protectedRoutes,
+    uploadMultipleFiles(filedsArray),
+    validation(gemSchema),
+    createGem
+  )
+  .get(getAllGems);
 
-gemRouter.route("/")
-    .post(protectedRoutes, uploadMultipleFile(filedsArray, "gem"), validation(gemSchema), createGem)
-    .get(getAllGems);
-    
 gemRouter
   .route("/:id")
   .get(getGemById)
   .delete(protectedRoutes, deleteGem) //, allowedTo("admin")
   .put(
     protectedRoutes,
-    allowedTo("admin"),
-    uploadMultipleFile(filedsArray, "gem"),
+    uploadMultipleFiles(filedsArray),
     validation(gemUpdateSchema),
     updateGem
   );
-  
 
-
-export default gemRouter;         
+export default gemRouter;
