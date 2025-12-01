@@ -29,9 +29,9 @@ const connectDB = async () => {
       bufferCommands: false
     });
     isConnected = true;
-    console.log("DB Connected");
+    console.log("✅ DB Connected");
   } catch (err) {
-    console.error("DB Connection Failed:", err);
+    console.error("❌ DB Connection Failed:", err);
   }
 };
 
@@ -39,12 +39,16 @@ app.use(cors({
   origin: (origin, cb) => cb(null, origin), 
   credentials: true 
 }));
-app.use(express.json());
+
 app.use(cookieParser());
 
+app.post("/webhook", 
+  express.raw({ type: "application/json" }), 
+  createOnlineSession
+);
 
-
-app.post("/webhook", express.raw({ type: "application/json" }), createOnlineSession);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => res.send("Hello World!"));
 app.use("/auth", authRouter);
@@ -68,5 +72,5 @@ export default async function handler(req, res) {
 if (process.env.NODE_ENV !== "production") {
   await connectDB();
   const port = process.env.PORT || 3000;
-  app.listen(port, () => console.log(`Local server running on port ${port}`));
+  app.listen(port, () => console.log(`🚀 Local server running on port ${port}`));
 }
