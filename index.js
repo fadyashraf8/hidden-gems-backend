@@ -15,6 +15,7 @@ import { createOnlineSession } from "./controllers/auth.controller.js";
 import ratingRouter from "./route/rating.route.js";
 import contactRouter from "./route/contactUs.route.js";
 import aiRouter from "./route/ai.route.js";
+import wishlistRouter from "./route/wishlist.route.js";
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.use("/vouchers", voucherRouter);
 app.use("/ratings", ratingRouter);
 app.use("/contactus", contactRouter);
 app.use("/ai", aiRouter);
+app.use("/wishlist", wishlistRouter);
 
 app.use(globalMiddleWare);
 
