@@ -1,5 +1,6 @@
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { uploadToCloudinary } from "../middleware/cloudinaryConfig.js";
+import { getGem } from "../repository/gem.repo.js";
 import { getRatingNumberByReviewId } from "../repository/rating.repo.js";
 import {
   createReview,
@@ -96,10 +97,12 @@ const deleteReview = catchAsyncError(async (req, res, next) => {
   if (!deletedReview) {
     return next(new AppError("Review not found", 404));
   }
+  const gem = await getGem(deletedReview.gemId);
+  const gemTitle = gem.name;
   logActivity(
     req.user,
     "user deleted a review",
-    "user deleted a review with " + deletedReview.description,
+    "user deleted a review on " + gemTitle,
     false
   );
   return res.status(200).send(deletedReview);
