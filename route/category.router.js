@@ -13,6 +13,9 @@ categoryRouter
     categoryController.createCategory
   )
   .get(categoryController.getAllCategories);
+categoryRouter
+  .route("/allCategories")
+  .get(categoryController.getAllCategoriesWithoutPagination);
 
 categoryRouter
   .route("/:id")

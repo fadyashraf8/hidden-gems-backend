@@ -1,5 +1,3 @@
-
-
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { userModel } from "../models/user.js";
 import { AppError } from "../utils/AppError.js";
@@ -9,11 +7,15 @@ import { categoryModel } from "../models/category.js";
 import { uploadToCloudinary } from "../middleware/cloudinaryConfig.js";
 
 const createCategory = catchAsyncError(async (req, res, next) => {
-  let isExist = await categoryModel.findOne({ categoryName: req.body.categoryName });
+  let isExist = await categoryModel.findOne({
+    categoryName: req.body.categoryName,
+  });
   if (isExist) return next(new AppError(`Category already exists`, 400));
 
-     const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "category");
-
+  const cloudinaryResult = await uploadToCloudinary(
+    req.file.buffer,
+    "category"
+  );
 
   let result = new categoryModel({
     categoryName: req.body.categoryName,
@@ -30,10 +32,11 @@ const createCategory = catchAsyncError(async (req, res, next) => {
 });
 
 const getCategory = catchAsyncError(async (req, res, next) => {
-  let result = await categoryModel.findById(req.params.id).populate('createdBy', 'firstName lastName email');
+  let result = await categoryModel
+    .findById(req.params.id)
+    .populate("createdBy", "firstName lastName email");
 
   if (!result) return next(new AppError(`isExist not found`, 404));
-
 
   res.status(200).json({
     message: "Success",
@@ -42,7 +45,6 @@ const getCategory = catchAsyncError(async (req, res, next) => {
 });
 
 const getAllCategories = catchAsyncError(async (req, res, next) => {
-
   const countQuery = new ApiFeatures(categoryModel.find({}), req.query)
     .filter()
     .search();
@@ -56,10 +58,13 @@ const getAllCategories = catchAsyncError(async (req, res, next) => {
     .fields()
     .paginate();
 
-  const result = await apifeatures.mongooseQuery.populate('createdBy', 'firstName lastName email');
+  const result = await apifeatures.mongooseQuery.populate(
+    "createdBy",
+    "firstName lastName email"
+  );
 
   const totalPages = Math.ceil(totalItems / apifeatures.limit);
-// console.log(result);
+  // console.log(result);
 
   res.status(200).json({
     message: "success",
@@ -70,6 +75,18 @@ const getAllCategories = catchAsyncError(async (req, res, next) => {
   });
 });
 
+const getAllCategoriesWithoutPagination = catchAsyncError(
+  async (req, res, next) => {
+    const result = await categoryModel
+      .find({})
+      .populate("createdBy", "firstName lastName email");
+
+    res.status(200).json({
+      message: "success",
+      result
+    });
+  }
+);
 const updateCategory = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
 
@@ -80,8 +97,11 @@ const updateCategory = catchAsyncError(async (req, res, next) => {
     category.categoryName = req.body.categoryName;
   }
 
-  if (req.file?.buffer) { 
-    const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "category");
+  if (req.file?.buffer) {
+    const cloudinaryResult = await uploadToCloudinary(
+      req.file.buffer,
+      "category"
+    );
     category.categoryImage = cloudinaryResult.secure_url;
   }
 
@@ -93,14 +113,19 @@ const updateCategory = catchAsyncError(async (req, res, next) => {
   });
 });
 
-const deleteCategory = catchAsyncError(
-    async (req, res, next) => {
-        const { id } = req.params
-        let result = await categoryModel.findByIdAndDelete(id)
+const deleteCategory = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  let result = await categoryModel.findByIdAndDelete(id);
 
-        !result && next(new AppError(`category not found`, 404))
-        result && res.status(200).json({ message: "success", result })
-    }
-)
+  !result && next(new AppError(`category not found`, 404));
+  result && res.status(200).json({ message: "success", result });
+});
 
-export { createCategory, getCategory, getAllCategories, deleteCategory, updateCategory };
+export {
+  createCategory,
+  getCategory,
+  getAllCategories,
+  deleteCategory,
+  updateCategory,
+  getAllCategoriesWithoutPagination
+};
