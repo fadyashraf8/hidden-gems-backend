@@ -148,7 +148,7 @@ const deleteVoucherForUser = catchAsyncError(async (req, res, next) => {
     if(!voucher) {
         return next(new AppError("Voucher can not be found.", 404));
     }
-    logActivity(req.user, "User deleted a voucher", "You deleted on of your own vouchers", true);
+    logActivity(req.user, "User deleted a voucher", "You deleted one of your own vouchers", true);
     res.status(200).send({voucher});
 })
 export { createVoucherForUser, getVoucherByCode, redeemVoucher, getAllVouchers, deleteVoucherForUser };
