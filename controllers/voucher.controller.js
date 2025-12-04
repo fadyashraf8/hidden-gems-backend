@@ -11,10 +11,14 @@ import { logActivity } from "./activity.controller.js";
 const getAllVouchers = catchAsyncError(async (req, res, next) => {
     const userId = req.user._id;
     const vouchers = await voucherRepository.getAllVouchersForUser(userId);
+    const transactionedVocuhers = await transactionVoucherRepository.getAllTransactionsById(userId);
     if(vouchers.length <= 0) {
         return next(new AppError("User don't has any vouchers"), 404);
     }
-    res.status(200).send(vouchers);
+    res.status(200).send({
+        vouchers,
+        transactionedVocuhers
+    });
 })
 const createVoucherForUser = catchAsyncError(async (req, res, next) => {
     const userId = req.user._id;

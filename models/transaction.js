@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
 const transactionedVocuherSchema = new mongoose.Schema({
-  code: { type: String, required: true },        // voucher code
-  discount: { type: Number, required: true },    // discount applied
+  code: { type: String, required: true },        
+  discount: { type: Number, required: true },   
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // who accepted/rejected
+  admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, 
   decision: { type: String, enum: ["accept", "reject"], required: true },
   redeemedAt: { type: Date, default: Date.now },
   gemId: { type: mongoose.Schema.Types.ObjectId, ref: "Gem" },
