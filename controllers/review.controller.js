@@ -69,7 +69,7 @@ const getAllReviewsByGemId = catchAsyncError(async (req, res, next) => {
 
 const postReview = catchAsyncError(async (req, res, next) => {
   const reviewObj = req.body;
-
+  const userId = req.user._id;
   let images = [];
 
   if (req.files?.images?.length) {
@@ -80,6 +80,7 @@ const postReview = catchAsyncError(async (req, res, next) => {
   }
 
   reviewObj.images = images;
+  reviewObj.userId = userId;
   //check gemId exist
   const createdReview = await createReview(reviewObj);
   logActivity(

@@ -17,6 +17,6 @@ const reviewSchem = new mongoose.Schema({
     images: {
         type: [String],
     }
-})
+}, {timestamps: true})
 
 export const reviewModel = mongoose.model("review", reviewSchem)

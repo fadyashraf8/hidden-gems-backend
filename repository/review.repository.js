@@ -1,16 +1,19 @@
 import mongoose from "mongoose";
 import { reviewModel } from "../models/review.js";
 
+
 export const createReview = async (review) => {
-    return await reviewModel.create(review);
+    return (await reviewModel.create(review))
+        .populate({path: "userId", select: "firstName lastName"});
 }
 
 export const getAllReviews = () => {
-    return reviewModel.find();
+    return reviewModel.find().populate({path: "userId", select: "firstName lastName"});
 }
 
 export const getAllReviewsForGem = (gemId) => {
-    return reviewModel.find({gemId: gemId});
+    return reviewModel.find({gemId: gemId})
+        .populate({path: "userId", select: "firstName lastName"});
 }
 
 export const deleteReviewById = async (id) => {
