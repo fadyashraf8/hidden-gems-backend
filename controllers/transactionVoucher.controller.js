@@ -2,6 +2,18 @@ import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { ApiFeatures } from "../utils/ApiFeatures.js";
 import { AppError } from "../utils/AppError.js";
 import * as repository from "../repository/transactionVocuher.repository.js";
+
+const getTransActionById = catchAsyncError(async (req, res, next) => {
+    const {gemId} = req.params;
+    if(!gemId) {
+        return next(new AppError("Gem Id is required", 400));
+    }
+    const transactionVocuher = repository.getTransActionById(gemId);
+    if(!transactionVocuher) {
+        return res.status(404).send({message: "Transction voucher not found"});
+    }
+    return res.status(200).send(transactionVocuher);
+})
 const getAllTransActionForUser = catchAsyncError(async (req, res, next) => {
     const id = "692c3c705e5fa2ca7926577c";
     const apifeatures = new ApiFeatures(repository.getAllTransactionsByIdQuery(id), req.query)
@@ -74,4 +86,4 @@ const getAllTransActionForAdmin = catchAsyncError(async (req, res, next) => {
         result,
     })
 })
-export {getAllTransActionForUser, getAllTransActionsForOwner, getAllTransActionForAdmin}
+export {getAllTransActionForUser, getAllTransActionsForOwner, getAllTransActionForAdmin, getTransActionById}
