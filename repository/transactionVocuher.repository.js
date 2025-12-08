@@ -23,3 +23,11 @@ export const getAllTransactionsByGemIdQuery = (gemId) => {
 export const getAllTransActionQuery = () => {
     return transactionVoucherModel.find({});
 }
+
+export const countWeeklyTranaction = async (userId, start, end) => {
+    return await transactionVoucherModel.countDocuments({
+        user: userId,
+        decision: "accept",
+        redeemedAt: {$gte: start, $lt: end}
+    })
+}

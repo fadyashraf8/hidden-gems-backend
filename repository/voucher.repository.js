@@ -52,3 +52,10 @@ export const getAllVouchersByGemIdQuery = (gemId) => {
     .populate("gemId")
     .populate("userId");
 };
+
+export const countWeeklyVouchers = async (userId, start, end) => {
+    return await voucherModel.countDocuments({
+        userId: userId,
+        createdAt: {$gte: start, $lt: end}
+    })
+}
