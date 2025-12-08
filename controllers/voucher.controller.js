@@ -8,6 +8,7 @@ import QRCode from "qrcode";
 import { getGem } from "../repository/gem.repo.js";
 import { logActivity } from "./activity.controller.js";
 import { ApiFeatures } from "../utils/ApiFeatures.js";
+import getWeek from "../utils/getWeek.js";
 
 const getAllVouchersForAdmin = catchAsyncError(async (req, res, next) => {
     const adminId = req.user._id;
@@ -71,6 +72,13 @@ const createVoucherForUser = catchAsyncError(async (req, res, next) => {
     const userVouchers = await voucherRepository.getAllVouchersForUser(userId);
     if(userVouchers.length > 0) {
         return next(new AppError("User has unredeemed voucher", 400));
+    }
+
+    //check user has redeemed vouchers in the same week
+    const {start, end} = getWeek();
+    const weeklyCount = await transactionVoucherRepository.countWeeklyTranaction(userId, start, end);
+    if(weeklyCount >= 3) {
+        return next(new AppError("User reached the limit of vouchers a week", 400));
     }
 
     //check is user already has a voucher for this gem
