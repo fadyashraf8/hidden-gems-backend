@@ -1,5 +1,5 @@
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
-import { getUserById } from "../repository/user.repo.js";
+import { getUserById, getUserPoints, updateUserPointsById } from "../repository/user.repo.js";
 import { AppError } from "../utils/AppError.js";
 import * as voucherRepository from "../repository/voucher.repository.js";
 import * as transactionVoucherRepository from "../repository/transactionVocuher.repository.js";
@@ -100,6 +100,7 @@ const createVoucherForUser = catchAsyncError(async (req, res, next) => {
         expiryDate: new Date(new Date().setHours(new Date().getHours() + 24)),
         userId: userId,
         gemId: gemId,
+        voucherType: 'subscription',
         qrCode: "",
     };
     const qrUrl = await QRCode.toDataURL(
@@ -212,4 +213,57 @@ const getAllVouchersForOwner = catchAsyncError(async (req, res, next) => {
         result,
     });
 })
-export { createVoucherForUser, getVoucherByCode, redeemVoucher, getAllVouchers, deleteVoucherForUser, getAllVouchersForOwner, getAllVouchersForAdmin };
+
+const createVoucherByPoints = catchAsyncError(async (req, res, next) => {
+    const userId = req.user._id;
+    const userObj = await getUserPoints(userId);
+    const {points} = req.body || 0;
+    const {gemId} = req.params
+    if(points > 300) {
+        points = 300;
+    }
+
+    if(userObj.points < 50) {
+        return next(new AppError("Not enoupgh points to create a voucher", 400));
+    }
+    if(userObj.points < points) {
+        return next(new AppError("Your account has less points than requested.", 400));
+    }
+
+    const userVouchers = await voucherRepository.getAllVouchersForUser(userId);
+    if(userVouchers.length > 0) {
+        return next(new AppError("User has unredeemed voucher", 400));
+    }
+    const voucherCode = "POINTS-" + Math.floor(100000 + Math.random() * 900000).toString();
+    //create a voucher then substract his points from his document in the database
+    const voucherData = {
+        code: voucherCode,
+        discount: points,
+        expiryDate: new Date(new Date().setHours(new Date().getHours() + 24)),
+        userId: userId,
+        gemId: gemId,
+        voucherType: "points",
+        qrCode: "",
+    };
+    console.log(voucherData);
+    const qrUrl = await QRCode.toDataURL(
+        "http://localhost:5173/owner/" + voucherCode
+    );
+    voucherData.qrCode = qrUrl;
+    const createdVoucher = await voucherRepository.createVoucher(voucherData);
+    const user = await updateUserPointsById(userId, points);
+    if (createdVoucher && req.user) {
+        logActivity(
+            req.user,
+            "User created a voucher using his points",
+            `User created voucher ${createdVoucher.code
+            } at ${new Date().toUTCString()}`,
+            true
+        );
+    }
+    res.status(201).json({
+        createdVoucher,
+    });
+
+})
+export { createVoucherForUser, getVoucherByCode, redeemVoucher, getAllVouchers, deleteVoucherForUser, getAllVouchersForOwner, getAllVouchersForAdmin, createVoucherByPoints };

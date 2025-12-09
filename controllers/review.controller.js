@@ -13,6 +13,7 @@ import {
 import { ApiFeatures } from "../utils/ApiFeatures.js";
 import { AppError } from "../utils/AppError.js";
 import { logActivity } from "./activity.controller.js";
+import { getGemById } from "./gem.controller.js";
 
 
 const getReviewByUserId = catchAsyncError(async (req, res, next) => {
@@ -109,9 +110,13 @@ const getAllReviewsByGemId = catchAsyncError(async (req, res, next) => {
 const postReview = catchAsyncError(async (req, res, next) => {
   const reviewObj = req.body;
   const userId = req.user._id;
-  const isExist = await getReviewByAuthorId(userId);
+  const isExist = await getReviewByAuthorId(userId, reviewObj.gemId);
   if(isExist) {
-    return next(new AppError("User already has a review.", 400));
+    return next(new AppError("User already has a review on this gem.", 400));
+  }
+  const gemExist = await getGem(reviewObj.gemId);
+  if(!gemExist) {
+    return next(new AppError("Gem can not be found to put on a review.", 404));
   }
   let images = [];
 
