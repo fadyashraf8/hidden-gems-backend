@@ -11,8 +11,8 @@ export const getAllReviews = () => {
     return reviewModel.find().populate({path: "userId", select: "firstName lastName"});
 }
 
-export const getReviewByAuthorId = async (id) => {
-    return reviewModel.findOne({userId: id});
+export const getReviewByAuthorId = async (id, gemId) => {
+    return reviewModel.findOne({userId: id, gemId: gemId});
 }
 
 export const getAllReviewsForGem = (gemId) => {
