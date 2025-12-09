@@ -7,6 +7,7 @@ const transactionedVocuherSchema = new mongoose.Schema({
   admin: { type: mongoose.Schema.Types.ObjectId, ref: "user" }, 
   decision: { type: String, enum: ["accept", "reject"], required: true },
   redeemedAt: { type: Date, default: Date.now },
+  voucherType: {type: String, default: "subscription", enum: ['subscription', 'points']},
   gemId: { type: mongoose.Schema.Types.ObjectId, ref: "gem" },
 });
 

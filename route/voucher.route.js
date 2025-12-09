@@ -1,6 +1,7 @@
 import express from 'express';
 import { allowedTo, protectedRoutes } from '../controllers/auth.controller.js';
 import { 
+    createVoucherByPoints,
     createVoucherForUser, 
     deleteVoucherForUser, 
     getAllVouchers, 
@@ -15,6 +16,7 @@ router.get("/", protectedRoutes, getAllVouchers);
 router.get("/admin", protectedRoutes, allowedTo("admin"), getAllVouchersForAdmin);
 router.get("/:gemId", protectedRoutes, allowedTo("owner"), getAllVouchersForOwner)
 router.post('/create/:gemId', protectedRoutes, createVoucherForUser);
+router.post('/createByPoints/:gemId', protectedRoutes, createVoucherByPoints);
 router.get('/details/:code', protectedRoutes, getVoucherByCode);
 router.post('/redeem/:code', protectedRoutes, allowedTo('owner'), redeemVoucher);
 router.delete('/:voucherId', protectedRoutes, deleteVoucherForUser);
