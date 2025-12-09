@@ -14,23 +14,24 @@ import { ApiFeatures } from "../utils/ApiFeatures.js";
 import { AppError } from "../utils/AppError.js";
 import { logActivity } from "./activity.controller.js";
 
-// const getAllReviewsForAllGems = catchAsyncError(async (req, res) => {
-//     const apifeatures = new ApiFeatures(getAllReviews(), req.query)
-//         .paginate()
-//         .sort()
-//         .fields()
-//         .filter()
-//         .search();
-//     const result = await apifeatures.mongooseQuery;
-//     return res.status(200).send(result);
-// })
 
 const getReviewByUserId = catchAsyncError(async (req, res, next) => {
   const userId = req.user._id;
   const userPost = await getReviewByAuthorId(userId);
-  if(!userPost._id) {
+  if (!userPost._id) {
     return next(new AppError("Review not found.", 404));
   }
+
+  let responseReview = userPost.toObject ? userPost.toObject() : userPost;
+  const isViewingOwnReview =req.user._id.toString() === userPost.userId.toString();
+  if (responseReview.isAnonymous && responseReview.userId && !isViewingOwnReview) {
+    responseReview.userId = {
+      _id: responseReview.userId._id,
+      firstName: "Anonymous",
+      lastName: "",
+    };
+  }
+
   return res.status(200).send(userPost);
 })
 const getAllReviewsForAllGems = catchAsyncError(async (req, res, next) => {
@@ -46,7 +47,26 @@ const getAllReviewsForAllGems = catchAsyncError(async (req, res, next) => {
     .fields()
     .paginate();
 
-  const result = await apifeatures.mongooseQuery;
+  // const result = await apifeatures.mongooseQuery;
+
+  let result = await apifeatures.mongooseQuery
+    .populate("userId", "firstName lastName _id")
+    .lean()
+  
+    // Handle anonymous reviews
+    result = result.map((review) => {
+      // const reviewObj = review.toObject ? review.toObject() : review;
+      if (review.isAnonymous && review.userId) {
+        review.userId = {
+          _id: review.userId._id,
+          firstName: "Anonymous",
+          lastName: "",
+        };
+      }
+
+      return review;
+    });
+
 
   const totalPages = Math.ceil(totalItems / apifeatures.limit);
 
@@ -70,6 +90,16 @@ const getAllReviewsByGemId = catchAsyncError(async (req, res, next) => {
   let result = await apifeatures.mongooseQuery;
   for (let review of result) {
     review.rating = await getRatingNumberByReviewId(review._id);
+    // Handle anonymous reviews
+    if (review.isAnonymous && review.userId) {
+      // Create a masked user object
+      review.userId = {
+        _id: review.userId._id,
+        firstName: "Anonymous",
+        lastName: "",
+      };
+    }
+
     //  console.log(review.rating);
   }
   // const reviewsList = await getAllReviewsForGem(gemId);
@@ -95,14 +125,39 @@ const postReview = catchAsyncError(async (req, res, next) => {
   reviewObj.images = images;
   reviewObj.userId = userId;
   //check gemId exist
-  const createdReview = await createReview(reviewObj);
-  logActivity(
-    req.user,
-    "user posted a review",
-    "user created a review with " + createdReview.description,
-    false
+  const createdReview = await createReview(reviewObj)
+    .populate(
+    "userId",
+    "firstName lastName _id"
   );
-  return res.status(200).send(createdReview);
+    
+    let responseReview = createdReview.toObject();
+    if (responseReview.isAnonymous && responseReview.userId) {
+      // Mask the user's name
+      responseReview.userId = {
+        _id: responseReview.userId._id,
+        firstName: "Anonymous",
+        lastName: "",
+      };
+    }
+
+  if (!responseReview.isAnonymous) {
+    logActivity(
+      req.user,
+      `${req.user.firstName} posted a review`,
+      "You created a review with " + createdReview.description,
+      false
+    );
+  } else {
+    logActivity(
+      req.user,
+      `${req.user.firstName} posted a review`,
+      "You created an anonymous review with " + createdReview.description,
+      false
+    );
+  }
+
+  return res.status(200).send(responseReview);
 });
 
 const deleteReview = catchAsyncError(async (req, res, next) => {

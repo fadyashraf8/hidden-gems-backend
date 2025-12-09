@@ -15,7 +15,11 @@ const reviewSchem = new mongoose.Schema({
         ref: "gem"
     },
     images: {
-        type: [String],
+        type: [String],    
+    },
+    isAnonymous: {
+        type: Boolean,
+        default: false
     }
 }, {timestamps: true})
 
