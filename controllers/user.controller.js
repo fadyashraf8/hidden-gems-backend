@@ -106,7 +106,8 @@ const updateUser = catchAsyncError(async (req, res, next) => {
     "image",
     "role",
     "subscription",
-    "verified"
+    "verified",
+    "points"
   ];
 
   for (let key of allowedUpdates) {
