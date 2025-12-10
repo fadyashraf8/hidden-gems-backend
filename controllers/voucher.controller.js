@@ -65,9 +65,17 @@ const createVoucherForUser = catchAsyncError(async (req, res, next) => {
         gemDiscount = gemDiscountGold;
     } else if (userSubsciptionType === "platinum") {
         gemDiscount = gemDiscountPlatinum;
-    } else {
-        return next(new AppError("Free users are not allowed to get vouchers please upgrade", 400));
-    }
+    } 
+    else {
+        if(gem.discount > 0) {
+            gemDiscount = gem.discount;
+        }
+        else {
+            return next(
+                new AppError("Free users are not allowed to get vouchers for this please upgrade",
+                400));
+        }
+    }  
 
     const userVouchers = await voucherRepository.getAllVouchersForUser(userId);
     if(userVouchers.length > 0) {
