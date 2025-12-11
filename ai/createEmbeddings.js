@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AppError } from '../utils/AppError.js';
 import { config } from 'dotenv';
-import { getGemsPromise } from '../repository/gem.repo.js';
+
 config();
 export const createEmbeddings = async (gemDescription) => {
     if(!process.env.GEMINI_KEY) {

@@ -13,5 +13,4 @@ router.post("/",protectedRoutes, uploadMultipleFiles([
   ]), reviewController.postReview);
 router.delete("/:id",protectedRoutes,  reviewController.deleteReview);
 router.patch("/:id" ,protectedRoutes , reviewController.updateReview);
-
 export default router;
