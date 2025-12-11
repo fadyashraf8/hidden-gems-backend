@@ -27,12 +27,24 @@ const getAllGemRatings = catchAsyncError(async (req, res, next) => {
     const { gemId } = req.params;
     // console.log(gemId);
     let ratings = await getTheGemRatings(gemId);
+    const processedRatings = ratings.map(rating => {
+        let ratingObj = rating.toObject? rating.toObject() : rating; 
+        if(ratingObj.isAnonymous && ratingObj.createdBy){
+          ratingObj.createdBy = {
+            _id: ratingObj.createdBy._id,
+            firstName: "Anonymous",
+            lastName: "",
+
+          }
+        }
+        return ratingObj;
+      });
     // 
     return res
       .status(200)
       .json({
-        message: ratings.length === 0 ? "this gem has no ratings yet" : "success",
-        ratings,
+        message: processedRatings.length === 0 ? "this gem has no ratings yet" : "success",
+        ratings: processedRatings,
       });
 })
 
@@ -101,6 +113,7 @@ const createRating = catchAsyncError(async (req, res, next) => {
       rating: req.body.rating,
       createdBy: req.user._id,
       reviewId: req.body.reviewId || null,
+      isAnonymous: req.body.isAnonymous || false,
     };
     const rating = await createTheRating(ratingData);
 
@@ -145,4 +158,4 @@ const deleteRating = catchAsyncError(async (req, res, next) => {
     
 });
 
-export {  getRatingById,getAllGemRatings,getAllUserRatings,getUserRatingForGem,getGemAvgRating, createRating, updateRating, deleteRating };
+export {  getRatingById,getAllGemRatings,getAllUserRatings,getUserRatingForGem,getGemAvgRating, createRating, updateRating, deleteRating }

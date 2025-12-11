@@ -22,6 +22,11 @@ const ratingSchema = new mongoose.Schema({
     ref: "Review",
     // required: true,
   },
+  isAnonymous: {
+      type: Boolean,
+      default: false
+  }
+  
 },{ timestamps: true});
 
 export const ratingModel = mongoose.model("rating", ratingSchema);

@@ -9,10 +9,12 @@ export const ratingSchema = Joi.object({
       'string.hex': 'Review ID must be a valid MongoDB ObjectId',
       'string.length': 'Review ID must be 24 characters long'
       }),
-   rating: Joi.number().min(1).max(5).required().messages({
+     rating: Joi.number().min(1).max(5).required().messages({
      "number.min": "Rating must be at least 1",
      "number.max": "Rating cannot exceed 5",
-  }),
+     }),
+     isAnonymous: Joi.boolean().optional(),
+
 });
 
 
@@ -23,5 +25,5 @@ export const ratingUpdateSchema = Joi.object({
   }),rating: Joi.number().min(1).max(5).optional().messages({
        "number.min": "Rating must be at least 1",
        "number.max": "Rating cannot exceed 5",  
-  })
+  }),isAnonymous: Joi.boolean().optional(),
 });
