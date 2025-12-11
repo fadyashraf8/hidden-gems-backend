@@ -119,8 +119,8 @@ const createVoucherForUser = catchAsyncError(async (req, res, next) => {
     if (createdVoucher && req.user) {
         logActivity(
             req.user,
-            "User created a voucher",
-            `User created voucher ${createdVoucher.code
+            `${req.user.firstName} ${req.user.lastName} created a voucher`,
+            `${req.user.email} created voucher ${createdVoucher.code
             } at ${new Date().toUTCString()}`,
             true
         );
@@ -172,8 +172,8 @@ const redeemVoucher = catchAsyncError(async (req, res, next) => {
     if (deletedVoucher && req.user) {
         logActivity(
             req.user,
-            "User reedemed a voucher for",
-            `User reedemed voucher ${deletedVoucher.code} at ${new Date().toUTCString()}`,
+            `${req.user.firstName} ${req.user.lastName} reedemed a voucher for`,
+            `${req.user.email} reedemed voucher ${deletedVoucher.code} at ${new Date().toUTCString()}`,
             true
         );
     }
@@ -192,7 +192,7 @@ const deleteVoucherForUser = catchAsyncError(async (req, res, next) => {
     if(!voucher) {
         return next(new AppError("Voucher can not be found.", 404));
     }
-    logActivity(req.user, "User deleted a voucher", "You deleted one of your own vouchers", true);
+    logActivity(req.user, `${req.user.firstName} ${req.user.lastName} deleted a voucher`, `${req.user.email} deleted one of your own vouchers`, true);
     res.status(200).send({voucher});
 })
 
@@ -263,8 +263,8 @@ const createVoucherByPoints = catchAsyncError(async (req, res, next) => {
     if (createdVoucher && req.user) {
         logActivity(
             req.user,
-            "User created a voucher using his points",
-            `User created voucher ${createdVoucher.code
+            `${req.user.firstName} ${req.user.lastName} created a voucher using his points`,
+            `${req.user.email} created voucher ${createdVoucher.code
             } at ${new Date().toUTCString()}`,
             true
         );

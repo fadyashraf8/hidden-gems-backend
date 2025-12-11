@@ -149,14 +149,14 @@ const postReview = catchAsyncError(async (req, res, next) => {
   if (!responseReview.isAnonymous) {
     logActivity(
       req.user,
-      `${req.user.firstName} posted a review`,
+      `${req.user.firstName} ${req.user.lastName} posted a review`,
       "You created a review with " + createdReview.description,
       false
     );
   } else {
     logActivity(
       req.user,
-      `${req.user.firstName} posted a review`,
+      `${req.user.firstName} ${req.user.lastName} posted a review`,
       "You created an anonymous review with " + createdReview.description,
       false
     );
@@ -175,8 +175,8 @@ const deleteReview = catchAsyncError(async (req, res, next) => {
   const gemTitle = gem.name;
   logActivity(
     req.user,
-    "user deleted a review",
-    "user deleted a review on " + gemTitle,
+    `${req.user.firstName} ${req.user.lastName} deleted a review`,
+    `${req.user.email} deleted a review on ` + gemTitle,
     false
   );
   return res.status(200).send(deletedReview);
@@ -191,8 +191,8 @@ const updateReview = catchAsyncError(async (req, res, next) => {
   }
   logActivity(
     req.user,
-    "user deleted a review",
-    "user deleted a review with " + withUpdatesReview.description,
+    `${req.user.firstName} ${req.user.lastName} deleted a review`,
+   ` ${req.user.email}user deleted a review with ` + withUpdatesReview.description,
     false
   );
   return res.status(201).send(withUpdatesReview);
