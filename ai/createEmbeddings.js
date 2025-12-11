@@ -21,6 +21,24 @@ export const cosineSimilarity = (vecA, vecB) => {
   return dot / (magA * magB);
 };
 
+export const enhancePrompt = (prompt) => {
+  return `
+The user describes the type of place they want. 
+Interpret the request and expand it with richer details.
+
+User request: "${prompt}"
+
+Converted semantic description:
+- Type of place
+- Expected environment (indoor/outdoor)
+- Mood or atmosphere
+- Geographic hints
+- Activities expected
+- Who might enjoy it
+`;
+};
+
+
 // export const generateAiPrompt = async (gem) => {
 //   // console.log(JSON.stringify(gem));
 //   const prompt = `Describe a hidden gem travel destination with the following details:
