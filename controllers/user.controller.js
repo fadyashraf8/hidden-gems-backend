@@ -97,6 +97,12 @@ const updateUser = catchAsyncError(async (req, res, next) => {
       return next(new AppError("Email already exists", 400));
     }
   }
+  if(req.body.password){
+    req.body.password = bcrypt.hashSync(
+      req.body.password,
+      Number(process.env.SALT_ROUNDS)
+    );
+  }
 
   const allowedUpdates = [
     "firstName",
@@ -105,6 +111,7 @@ const updateUser = catchAsyncError(async (req, res, next) => {
     "phoneNumber",
     "image",
     "role",
+    "password",
     "subscription",
     "verified",
     "points"
