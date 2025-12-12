@@ -32,13 +32,77 @@ const signUp = catchAsyncError(async (req, res, next) => {
 
   await result.save();
 
-  await sendEmail(
-    req.body.email,
-    "Welcome to Gemsy",
-    `<h2>Welcome ${req.body.firstName}!</h2>
-     <p>Your verification code is:</p>
-     <h1>${result.code}</h1>`
-  );
+ await sendEmail(
+  req.body.email,
+  "Welcome to Gemsy",
+  `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Gemsy</title>
+  </head>
+  <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color: #f3f4f6; color: #000;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f3f4f6; padding: 20px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            
+            <!-- Header -->
+            <tr>
+              <td align="center" style="padding-bottom: 20px;">
+                <h1 style="color: #dd0303; font-size: 28px; margin:0;">Welcome to Gemsy, ${req.body.firstName}!</h1>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding: 0 20px; font-size: 16px; line-height: 1.6; color: #333333; text-align: center;">
+                <p>We’re excited to have you on board. To get started, please verify your email using the code below:</p>
+              </td>
+            </tr>
+
+            <!-- Verification Code -->
+            <tr>
+              <td align="center" style="padding: 20px 0;">
+                <div style="
+                  display: inline-block;
+                  background-color: #dd0303;
+                  color: #ffffff;
+                  font-size: 32px;
+                  font-weight: bold;
+                  padding: 16px 32px;
+                  border-radius: 12px;
+                  letter-spacing: 4px;
+                ">
+                  ${result.code}
+                </div>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding-top: 20px; font-size: 14px; color: #666666; text-align: center;">
+                <p>If you didn’t sign up for Gemsy, you can safely ignore this email.</p>
+              </td>
+            </tr>
+
+            <tr>
+              <td align="center" style="padding-top: 10px;">
+                <p style="font-size: 12px; color: #999999;">&copy; ${new Date().getFullYear()} Gemsy. All rights reserved.</p>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `
+);
+
 
   res.status(201).json({
     message: "User registered successfully. Please verify your email.",
