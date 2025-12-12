@@ -1,6 +1,5 @@
 import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import { AppError } from "../utils/AppError.js";
-import { ApiFeatures } from "../utils/ApiFeatures.js";
 import {
   getTheRating,
   getTheGemRatings,
@@ -27,17 +26,8 @@ const getRatingById = catchAsyncError(async (req, res, next) => {
 const getAllGemRatings = catchAsyncError(async (req, res, next) => {
     const { gemId } = req.params;
     // console.log(gemId);
-  let ratingsQuery = await getTheGemRatings(gemId);
-  
-  const features = new ApiFeatures(ratingsQuery, req.query)
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
-
-  let ratings = await features.mongooseQuery;
-  
-  const processedRatings = ratings.map(rating => {
+    let ratings = await getTheGemRatings(gemId);
+    const processedRatings = ratings.map(rating => {
         let ratingObj = rating.toObject? rating.toObject() : rating; 
         if(ratingObj.isAnonymous && ratingObj.createdBy){
           ratingObj.createdBy = {
