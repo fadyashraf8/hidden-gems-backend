@@ -6,10 +6,9 @@ const getTheRating = async (id) => {
   return await ratingModel.findById(id);
 };
 
-const getTheGemRatings = async (gemId) => {
-  return await ratingModel
+const getTheGemRatings = (gemId) => {
+  return  ratingModel
     .find({ gem: gemId })
-    .sort({ createdAt: -1, _id: -1 })
     .populate("createdBy", "firstName lastName");
 };
 
