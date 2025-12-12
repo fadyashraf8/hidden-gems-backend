@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AppError } from '../utils/AppError.js';
 import { config } from 'dotenv';
-import { getGemsPromise } from '../repository/gem.repo.js';
+
 config();
 export const createEmbeddings = async (gemDescription) => {
     if(!process.env.GEMINI_KEY) {
@@ -20,6 +20,24 @@ export const cosineSimilarity = (vecA, vecB) => {
   const magB = Math.sqrt(vecB.reduce((sum, b) => sum + b*b, 0));
   return dot / (magA * magB);
 };
+
+export const enhancePrompt = (prompt) => {
+  return `
+The user describes the type of place they want. 
+Interpret the request and expand it with richer details.
+
+User request: "${prompt}"
+
+Converted semantic description:
+- Type of place
+- Expected environment (indoor/outdoor)
+- Mood or atmosphere
+- Geographic hints
+- Activities expected
+- Who might enjoy it
+`;
+};
+
 
 // export const generateAiPrompt = async (gem) => {
 //   // console.log(JSON.stringify(gem));

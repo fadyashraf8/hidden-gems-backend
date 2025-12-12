@@ -203,8 +203,16 @@ const createGem = catchAsyncError(async (req, res, next) => {
     createdBy: req.user._id,
   };
 
+
   let result = await createTheGem(gemData);
-  result.embeddings = await createEmbeddings(result.description);
+    const embeddingText = `
+Name: ${result.name}
+Location: ${result.gemLocation}
+Description: ${result.description}
+Discounts: Free ${result.discount}%, Gold ${result.discountGold}%, Platinum ${result.discountPlatinum}%
+`;
+
+  result.embeddings = await createEmbeddings(embeddingText);
   await result.save();
 
    if (status === "accepted") {
@@ -271,6 +279,44 @@ const deleteGem = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ message: "Gem deleted successfully", result });
 });
 
+const generateAllEmbeddings = catchAsyncError(async (req, res, next) => {
+  console.log(req);
+  if (req.user.role !== "admin") {
+    return next(new AppError("Only admins can regenerate embeddings", 403));
+  }
+
+  const gems = await getGemsPromise();
+  if (!gems || gems.length === 0) {
+    return next(new AppError("No gems found", 404));
+  }
+
+  let updatedCount = 0;
+
+  for (const gem of gems) {
+    const embeddingText = `
+Name: ${gem.name}
+Location: ${gem.gemLocation}
+Description: ${gem.description}
+Discounts: Free ${gem.discount}%, Gold ${gem.discountGold}%, Platinum ${gem.discountPlatinum}%
+`;
+
+    try {
+      gem.embeddings = await createEmbeddings(embeddingText);
+      await gem.save();
+      updatedCount++;
+    } catch (err) {
+      console.error(`Failed embedding for gem ID ${gem._id}:`, err.message);
+    }
+  }
+
+  return res.status(200).json({
+    message: "Embeddings regenerated successfully",
+    totalGems: gems.length,
+    updatedEmbeddings: updatedCount,
+  });
+});
+
+
 export {
   getAllGems,
   getGemById,
@@ -280,5 +326,6 @@ export {
   createGem,
   updateGem,
   deleteGem,
-  getAllSubscribedGems
+  getAllSubscribedGems,
+  generateAllEmbeddings
 };
