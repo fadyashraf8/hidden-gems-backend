@@ -131,10 +131,10 @@ const postReview = catchAsyncError(async (req, res, next) => {
   reviewObj.userId = userId;
   //check gemId exist
   const createdReview = await createReview(reviewObj)
-    .populate(
-    "userId",
-    "firstName lastName _id"
-  );
+  //   .populate(
+  //   "userId",
+  //   "firstName lastName _id"
+  // );
     
     let responseReview = createdReview.toObject();
     if (responseReview.isAnonymous && responseReview.userId) {
