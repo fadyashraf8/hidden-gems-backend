@@ -7,11 +7,16 @@ const getTheRating = async (id) => {
 };
 
 const getTheGemRatings = async (gemId) => {
-  return await ratingModel.find({gem: gemId}).sort({ createdAt: -1 }).populate('createdBy', 'firstName lastName');
+  return await ratingModel
+    .find({ gem: gemId })
+    .sort({ createdAt: -1, _id: -1 })
+    .populate("createdBy", "firstName lastName");
 };
 
 const getUserRatings = async (userId) => {
-  return await ratingModel.find({ createdBy: userId }).sort({ createdAt: -1 });
+  return await ratingModel
+    .find({ createdBy: userId })
+    .sort({ createdAt: -1, _id: -1 });
 }
 
 const getTheUserRatingForGem = async (userId, gemId) => {
