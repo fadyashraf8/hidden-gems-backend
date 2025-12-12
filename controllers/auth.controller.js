@@ -15,8 +15,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const signUp = catchAsyncError(async (req, res, next) => {
   let isExist = await userModel.findOne({ email: req.body.email });
   if (isExist) return next(new AppError(`Email already exists`, 400));
-       const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "user");
-  
+  const cloudinaryResult = await uploadToCloudinary(req.file.buffer, "user");
 
   let hashedPassword = bcrypt.hashSync(
     req.body.password,
@@ -43,57 +42,38 @@ const signUp = catchAsyncError(async (req, res, next) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Gemsy</title>
   </head>
-  <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color: #f3f4f6; color: #000;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f3f4f6; padding: 20px 0;">
+  <body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f3f4f6; color:#000000;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6; padding:20px 0;">
       <tr>
         <td align="center">
-          <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-            
-            <!-- Header -->
+          <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:12px; padding:40px; text-align:center;">
             <tr>
-              <td align="center" style="padding-bottom: 20px;">
-                <h1 style="color: #dd0303; font-size: 28px; margin:0;">Welcome to Gemsy, ${req.body.firstName}!</h1>
+              <td>
+                <h1 style="color:#dd0303; font-size:28px; margin:0;">Welcome, ${req.body.firstName}!</h1>
               </td>
             </tr>
-
-            <!-- Body -->
             <tr>
-              <td style="padding: 0 20px; font-size: 16px; line-height: 1.6; color: #333333; text-align: center;">
-                <p>We’re excited to have you on board. To get started, please verify your email using the code below:</p>
+              <td style="padding:20px 0; font-size:16px; color:#333333;">
+                <p>We’re excited to have you on board. Use the code below to verify your email:</p>
               </td>
             </tr>
-
-            <!-- Verification Code -->
             <tr>
-              <td align="center" style="padding: 20px 0;">
-                <div style="
-                  display: inline-block;
-                  background-color: #dd0303;
-                  color: #ffffff;
-                  font-size: 32px;
-                  font-weight: bold;
-                  padding: 16px 32px;
-                  border-radius: 12px;
-                  letter-spacing: 4px;
-                ">
+              <td>
+                <div style="display:inline-block; background-color:#dd0303; color:#ffffff; font-size:32px; font-weight:bold; padding:16px 32px; border-radius:12px; letter-spacing:4px;">
                   ${result.code}
                 </div>
               </td>
             </tr>
-
-            <!-- Footer -->
             <tr>
-              <td style="padding-top: 20px; font-size: 14px; color: #666666; text-align: center;">
+              <td style="padding-top:20px; font-size:14px; color:#666666;">
                 <p>If you didn’t sign up for Gemsy, you can safely ignore this email.</p>
               </td>
             </tr>
-
             <tr>
-              <td align="center" style="padding-top: 10px;">
-                <p style="font-size: 12px; color: #999999;">&copy; ${new Date().getFullYear()} Gemsy. All rights reserved.</p>
+              <td style="padding-top:10px; font-size:12px; color:#999999;">
+                &copy; ${new Date().getFullYear()} Gemsy. All rights reserved.
               </td>
             </tr>
-
           </table>
         </td>
       </tr>
@@ -122,13 +102,11 @@ const signIn = catchAsyncError(async (req, res, next) => {
     return next(new AppError(`Please verify your email first`, 403));
 
   console.log("user", user);
-  
+
   let token = jwt.sign({ userInfo: user }, process.env.JWT_KEY, {
     expiresIn: "7d",
   });
 
-
-  
   res
     .cookie("token", token, {
       httpOnly: true,
@@ -245,7 +223,6 @@ const getCurrentUser = catchAsyncError(async (req, res, next) => {
       lastPaymentDate: req.user.lastPaymentDate,
       subscriptionEndDate: req.user.subscriptionEndDate,
       stripeSubscriptionId: req.user.stripeSubscriptionId,
-
     },
   });
 });
@@ -338,12 +315,12 @@ export const checkoutPlatinum = async (req, res) => {
 
 export const createOnlineSession = async (request, response) => {
   console.log("🎯 Webhook endpoint hit!");
-  
+
   let event;
 
   if (process.env.WEBHOOK_SECRET) {
     const signature = request.headers["stripe-signature"];
-    
+
     if (!signature) {
       console.log("❌ No stripe-signature header found");
       return response.status(400).send("No signature");
@@ -372,29 +349,32 @@ export const createOnlineSession = async (request, response) => {
   }
 
   console.log("📩 Event type:", event.type);
-  console.log("📦 Full event data:", JSON.stringify(event.data.object, null, 2));
+  console.log(
+    "📦 Full event data:",
+    JSON.stringify(event.data.object, null, 2)
+  );
 
   // ✅ الطريقة الصح: استخدم checkout.session.completed بعد الدفع
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    
+
     console.log("💳 Full session object:", JSON.stringify(session, null, 2));
-    
+
     const userId = session.client_reference_id;
     const type = session.metadata?.type;
     const plan = session.metadata?.plan;
     const stripeCustomerId = session.customer;
-    
+
     // ⚠️ هنا المشكلة: session.subscription ممكن يكون null
     // الحل: نستناه من event تاني أو نجيبه بعدين
     let stripeSubscriptionId = session.subscription;
 
-    console.log("📊 Extracted data:", { 
-      userId, 
-      type, 
-      plan, 
-      stripeCustomerId, 
-      stripeSubscriptionId 
+    console.log("📊 Extracted data:", {
+      userId,
+      type,
+      plan,
+      stripeCustomerId,
+      stripeSubscriptionId,
     });
 
     if (!userId) {
@@ -418,7 +398,7 @@ export const createOnlineSession = async (request, response) => {
     try {
       if (type === "owner") {
         const updated = await userModel.findByIdAndUpdate(
-          userId, 
+          userId,
           {
             ...updateData,
             role: "owner",
@@ -465,9 +445,9 @@ export const createOnlineSession = async (request, response) => {
     const stripeCustomerId = subscription.customer;
     const stripeSubscriptionId = subscription.id;
 
-    console.log("🆕 Subscription created:", { 
-      stripeCustomerId, 
-      stripeSubscriptionId 
+    console.log("🆕 Subscription created:", {
+      stripeCustomerId,
+      stripeSubscriptionId,
     });
 
     try {
@@ -491,21 +471,23 @@ export const createOnlineSession = async (request, response) => {
     const stripeCustomerId = invoice.customer;
     const stripeSubscriptionId = invoice.subscription;
 
-    console.log("💰 Payment succeeded:", { 
-      stripeCustomerId, 
-      stripeSubscriptionId 
+    console.log("💰 Payment succeeded:", {
+      stripeCustomerId,
+      stripeSubscriptionId,
     });
 
     await userModel.findOneAndUpdate(
       { stripeCustomerId },
-      { 
+      {
         subscriptionStatus: "active",
         lastPaymentDate: new Date(),
-        stripeSubscriptionId // تحديث الـ subscription ID هنا كمان
+        stripeSubscriptionId, // تحديث الـ subscription ID هنا كمان
       }
     );
 
-    console.log(`✅ Monthly payment succeeded for customer: ${stripeCustomerId}`);
+    console.log(
+      `✅ Monthly payment succeeded for customer: ${stripeCustomerId}`
+    );
     return response.status(200).send("ok");
   }
 
@@ -538,23 +520,23 @@ export const createOnlineSession = async (request, response) => {
     const stripeCustomerId = subscription.customer;
 
     const user = await userModel.findOne({ stripeCustomerId });
-    
+
     if (user) {
       if (user.role === "owner") {
         await userModel.findOneAndUpdate(
           { stripeCustomerId },
-          { 
+          {
             role: "user",
             subscription: "free",
-            subscriptionStatus: "canceled"
+            subscriptionStatus: "canceled",
           }
         );
       } else {
         await userModel.findOneAndUpdate(
           { stripeCustomerId },
-          { 
+          {
             subscription: "free",
-            subscriptionStatus: "canceled"
+            subscriptionStatus: "canceled",
           }
         );
       }
@@ -590,17 +572,17 @@ export const createOnlineSession = async (request, response) => {
     if (userRole === "owner") {
       await userModel.findOneAndUpdate(
         { stripeCustomerId },
-        { 
+        {
           role: "owner",
-          subscriptionStatus: subscription.status
+          subscriptionStatus: subscription.status,
         }
       );
     } else {
       await userModel.findOneAndUpdate(
         { stripeCustomerId },
-        { 
+        {
           subscription: subscriptionType,
-          subscriptionStatus: subscription.status
+          subscriptionStatus: subscription.status,
         }
       );
     }
@@ -611,7 +593,6 @@ export const createOnlineSession = async (request, response) => {
 
   response.status(200).send("ok");
 };
-
 
 export const checkoutChange = async (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
@@ -627,8 +608,8 @@ export const cancelOwnerSubscription = async (req, res) => {
     const user = await userModel.findById(req.user._id);
 
     if (!user || !user.stripeSubscriptionId) {
-      return res.status(400).json({ 
-        message: "No active subscription found" 
+      return res.status(400).json({
+        message: "No active subscription found",
       });
     }
 
@@ -641,14 +622,13 @@ export const cancelOwnerSubscription = async (req, res) => {
       stripeSubscriptionId: null,
     });
 
-    res.json({ 
-      message: "Subscription cancelled successfully" 
+    res.json({
+      message: "Subscription cancelled successfully",
     });
-
   } catch (error) {
     console.error("Error cancelling subscription:", error);
-    res.status(500).json({ 
-      message: "Failed to cancel subscription" 
+    res.status(500).json({
+      message: "Failed to cancel subscription",
     });
   }
 };
