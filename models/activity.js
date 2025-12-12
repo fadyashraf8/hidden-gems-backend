@@ -14,8 +14,7 @@ const activitySchema = new mongoose.Schema({
         type: String,
         required: true
     },
-},
-    { timestamps: true },
+},{ timestamps: true },
 )
 
 export const activityModel = mongoose.model("activity", activitySchema);

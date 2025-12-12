@@ -6,7 +6,10 @@ import { AppError } from "../utils/AppError.js";
 
 const getAllActivities = catchAsyncError(async (req, res, next) => {
   const userId = req.user._id;
-
+  
+  if(!req.query.sort){
+    req.query.sort = '-createdAt';
+  }
   const countQuery = new ApiFeatures(getAllActivitiesForUser(userId), req.query)
     .filter()
     .search();
