@@ -22,8 +22,6 @@ export const cosineSimilarity = (vecA, vecB) => {
 };
 
 export const enhancePrompt = (prompt) => {
-    // We guide the LLM to generate a dense, comma-separated string that
-    // acts as an "ideal document" for the query.
     return `
 Generate a single, comma-separated, high-density keyword description suitable for vector embedding.
 Based on the user request, prioritize upscale, romantic, or chic environments in desirable locations for dates, such as Masr El Gedida (Heliopolis), Nasr City, or New Cairo.

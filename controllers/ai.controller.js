@@ -4,7 +4,7 @@ import { getGemsPromise } from "../repository/gem.repo.js";
 
 const generateSuggestions = catchAsyncError(async (req, res, next) => {
     const userPrompt = req.body.prompt;
-    const userVector = (await createEmbeddings(enhancePrompt(userPrompt)));
+    const userVector = (await createEmbeddings(userPrompt));
     const gems = await getGemsPromise();
     const similarties = gems.map(gem => ({
         gem,
@@ -19,6 +19,7 @@ const generateSuggestions = catchAsyncError(async (req, res, next) => {
             const {embeddings, ...gem} = s.gem.toObject();
             return gem;
         });
+      console.log(matches);  
     if (relevant.length === 0) {
     return res.status(200).json({
       suggestions: null,
