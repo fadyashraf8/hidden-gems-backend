@@ -22,19 +22,19 @@ export const cosineSimilarity = (vecA, vecB) => {
 };
 
 export const enhancePrompt = (prompt) => {
-  return `
-The user describes the type of place they want. 
-Interpret the request and expand it with richer details.
+    // We guide the LLM to generate a dense, comma-separated string that
+    // acts as an "ideal document" for the query.
+    return `
+Generate a single, comma-separated, high-density keyword description suitable for vector embedding.
+Based on the user request, prioritize upscale, romantic, or chic environments in desirable locations for dates, such as Masr El Gedida (Heliopolis), Nasr City, or New Cairo.
 
 User request: "${prompt}"
 
-Converted semantic description:
-- Type of place
-- Expected environment (indoor/outdoor)
-- Mood or atmosphere
-- Geographic hints
-- Activities expected
-- Who might enjoy it
+Generated Keyword Description:
+Type of place: upscale coffee shop, cafe, date spot, romantic venue
+Mood/Atmosphere: chic, elegant, cozy, sophisticated, quiet
+Location priority: Masr El Gedida, Heliopolis, Korba, Nasr City, New Cairo, non-crowded areas
+Focus: specialty coffee, gourmet desserts, premium pastries, outdoor seating
 `;
 };
 
