@@ -10,7 +10,6 @@ const generateSuggestions = catchAsyncError(async (req, res, next) => {
         gem,
         score: cosineSimilarity(userVector, gem.embeddings || 0)
     }))
-    // console.log(s.gem.name, "score:", cosineSimilarity(userVector, s.gem.embeddings.values));
 
     similarties.sort((a,b) => b.score - a.score);
     const THRESHOLD = 0.70;

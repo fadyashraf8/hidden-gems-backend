@@ -9,6 +9,7 @@ import { getGem } from "../repository/gem.repo.js";
 import { logActivity } from "./activity.controller.js";
 import { ApiFeatures } from "../utils/ApiFeatures.js";
 import getWeek from "../utils/getWeek.js";
+import mongoose from "mongoose";
 
 const getAllVouchersForAdmin = catchAsyncError(async (req, res, next) => {
     const adminId = req.user._id;
@@ -76,8 +77,9 @@ const createVoucherForUser = catchAsyncError(async (req, res, next) => {
                 400));
         }
     }  
-
-    const userVouchers = await voucherRepository.getAllVouchersForUser(userId);
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    const userVouchers = await voucherRepository.getAllVouchersForUser(userId, session);
     if(userVouchers.length > 0) {
         return next(new AppError("User has unredeemed voucher", 400));
     }
@@ -92,7 +94,8 @@ const createVoucherForUser = catchAsyncError(async (req, res, next) => {
     //check is user already has a voucher for this gem
     const existingVoucher = await voucherRepository.getVoucherByUserIdAndGemId(
         userId,
-        gemId
+        gemId,
+        session
     );
     if (existingVoucher) {
         return next(new AppError("User already has a voucher for this gem", 400));
@@ -115,7 +118,9 @@ const createVoucherForUser = catchAsyncError(async (req, res, next) => {
         "http://localhost:5173/owner/" + voucherCode
     );
     voucher.qrCode = qrUrl;
-    const createdVoucher = await voucherRepository.createVoucher(voucher);
+    const createdVoucher = await voucherRepository.createVoucher(voucher, session);
+    await session.commitTransaction();
+    session.endSession();
     if (createdVoucher && req.user) {
         logActivity(
             req.user,
@@ -125,6 +130,7 @@ const createVoucherForUser = catchAsyncError(async (req, res, next) => {
             true
         );
     }
+    
     res.status(201).json({
         createdVoucher,
     });

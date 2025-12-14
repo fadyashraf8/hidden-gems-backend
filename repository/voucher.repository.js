@@ -1,7 +1,8 @@
 import voucherModel from "../models/voucher.js";
 
-export const createVoucher = async (voucherData) => {
-  return await voucherModel.create(voucherData);
+export const createVoucher = async (voucherData, session) => {
+  const [createdVoucher] = await voucherModel.create([voucherData], { session });
+  return createdVoucher;
 };
 
 export const getVoucherByCode = async (code) => {
@@ -11,11 +12,11 @@ export const getVoucherByCode = async (code) => {
     .populate("userId"," firstName lastName email");
 };
 
-export const getVoucherByUserIdAndGemId = async (userId, gemId) => {
+export const getVoucherByUserIdAndGemId = async (userId, gemId, session) => {
   return await voucherModel
     .findOne({ userId: userId, gemId: gemId })
     .populate("gemId")
-    .populate("userId");
+    .populate("userId").session(session);
 };
 
 export const deleteVoucherByCode = async (code) => {
@@ -28,11 +29,11 @@ export const deleteVoucherByIdAndUserId = async (voucherId, userId) => {
   });
 };
 
-export const getAllVouchersForUser = async (id) => {
+export const getAllVouchersForUser = async (id, session) => {
   return await voucherModel
     .find({ userId: id })
     .populate("gemId")
-    .populate("userId");
+    .populate("userId").session(session);
 };
 
 export const getAllVouchersByGemId = async (gemId) => {
