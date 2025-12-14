@@ -4,7 +4,7 @@ export const getAllActivitiesForUser = (userId) => {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
         throw new Error("Invalid user ID");
     }
-    return activityModel.find({ userId: userId });
+    return activityModel.find({ userId: userId }).sort({createdAt: -1});
 }
 
 export const createActivityForUser = async (activity) => {
