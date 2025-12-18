@@ -34,6 +34,14 @@ const gemSchema = new mongoose.Schema({
     type: [Number],    
     required: false,  
     default: []
+  },
+  visitsCount: {
+    type: Number,
+    default: 0
+  },
+  visitedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user"
   }
 },
   { timestamps: true }

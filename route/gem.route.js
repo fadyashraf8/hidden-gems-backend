@@ -10,6 +10,7 @@ import {
   changeGemStatus,
   getAllSubscribedGems,
   generateAllEmbeddings,
+  countvisits
 } from "../controllers/gem.controller.js";
 import { uploadMultipleFiles } from "../middleware/fileUpload.js";
 import { validation } from "../middleware/validation.js";
@@ -49,6 +50,8 @@ gemRouter
     uploadMultipleFiles(filedsArray),
     validation(gemUpdateSchema),
     updateGem
-  );
+);
+  
+gemRouter.route("/:id/visit").post(protectedRoutes,allowedTo("owner"), countvisits);
 
 export default gemRouter;

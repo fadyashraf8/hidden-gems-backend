@@ -73,7 +73,6 @@ const getAllSubscribedGems = catchAsyncError(async (req, res, next) => {
     result,
   });
 });
-
 const getGemById = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
   // console.log(id);
@@ -84,7 +83,6 @@ const getGemById = catchAsyncError(async (req, res, next) => {
   if (!result) return next(new AppError(`Gem not found`, 404));
   res.status(200).json({ message: "success", result });
 });
-
 const getAllGemsForCategory = catchAsyncError(async (req, res, next) => {
   const { categoryId } = req.params;
 
@@ -118,7 +116,6 @@ const getAllGemsForCategory = catchAsyncError(async (req, res, next) => {
     result,
   });
 });
-
 const getAllGemsForUser = catchAsyncError(async (req, res, next) => {
   const { userId } = req.params;
   if (req.user.role !== "admin" && req.user._id.toString() !== userId) {
@@ -151,7 +148,6 @@ const getAllGemsForUser = catchAsyncError(async (req, res, next) => {
     result,
   });
 });
-
 const changeGemStatus = catchAsyncError(async (req, res, next) => {
   const { gemId } = req.params;
   const { status } = req.body;
@@ -178,7 +174,6 @@ const changeGemStatus = catchAsyncError(async (req, res, next) => {
     result: updatedGem,
   });
 });
-
 const createGem = catchAsyncError(async (req, res, next) => {
   let isExist = await findGemByName(req.body.name);
   if (isExist) return next(new AppError(`Gem already exists`, 400));
@@ -278,7 +273,6 @@ const deleteGem = catchAsyncError(async (req, res, next) => {
   await deleteTheGem(id);
   res.status(200).json({ message: "Gem deleted successfully", result });
 });
-
 const generateAllEmbeddings = catchAsyncError(async (req, res, next) => {
   console.log(req);
   if (req.user.role !== "admin") {
@@ -315,6 +309,28 @@ Discounts: Free ${gem.discount}%, Gold ${gem.discountGold}%, Platinum ${gem.disc
     updatedEmbeddings: updatedCount,
   });
 });
+const countvisits = catchAsyncError(async (req, res, next) => {
+    const gemId = req.params.id;
+    const userId = req.user._id;
+  
+    const gem = await getGem(gemId);
+    if (!gem) {
+      return res.status(404).json({ message: "Gem not found" });
+  }
+   
+    const alreadyVisited = gem.visitedBy.includes(userId);
+    if (!alreadyVisited) {
+      gem.visitedBy.push(userId);
+      gem.visitsCount += 1;
+      await gem.save();
+    }
+
+    res.status(200).json({
+      message: "Visit recorded",
+      visitsCount: gem.visitsCount,
+    });
+
+})
 
 
 export {
@@ -327,5 +343,6 @@ export {
   updateGem,
   deleteGem,
   getAllSubscribedGems,
-  generateAllEmbeddings
+  generateAllEmbeddings,
+  countvisits
 };
