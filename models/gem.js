@@ -39,10 +39,10 @@ const gemSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  visitedBy: {
+  visitedBy: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "user"
-  }
+  }]
 },
   { timestamps: true }
 );

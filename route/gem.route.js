@@ -52,6 +52,6 @@ gemRouter
     updateGem
 );
   
-gemRouter.route("/:id/visit").post(protectedRoutes,allowedTo("owner"), countvisits);
+gemRouter.route("/:id/visit").post(protectedRoutes,countvisits);
 
 export default gemRouter;
