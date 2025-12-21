@@ -612,7 +612,7 @@ export const checkoutChange = async (req, res) => {
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: req.user.stripeCustomerId,
-    return_url: `${frontendUrl}/account`,
+    return_url: `${frontendUrl}/profile`,
   });
   res.json({ url: portalSession.url });
 };

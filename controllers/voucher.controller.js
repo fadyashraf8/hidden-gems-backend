@@ -261,7 +261,7 @@ const createVoucherByPoints = catchAsyncError(async (req, res, next) => {
     };
     console.log(voucherData);
     const qrUrl = await QRCode.toDataURL(
-        "http://localhost:5173/owner/" + voucherCode
+        `${process.env.FRONTEND_URL}/owner/${voucherCode}` 
     );
     voucherData.qrCode = qrUrl;
     const createdVoucher = await voucherRepository.createVoucher(voucherData);
