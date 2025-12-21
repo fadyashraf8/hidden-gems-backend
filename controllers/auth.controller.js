@@ -105,18 +105,19 @@ const signIn = catchAsyncError(async (req, res, next) => {
     expiresIn: "7d",
   });
 
+  // إعدادات cookies محسّنة
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: "/",
+    secure: process.env.NODE_ENV === "production", // true في production فقط
+    sameSite: "lax", // أو "strict" - هيشتغل على incognito و iPhone
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام بالميلي ثانية
+    path: "/", // مهم جداً
   };
 
   res
     .cookie("token", token, cookieOptions)
     .status(200)
-    .json({ message: "Login successful", success: true });
+    .json({ message: "Login successful" });
 });
 
 const VerifyUser = catchAsyncError(async (req, res, next) => {
