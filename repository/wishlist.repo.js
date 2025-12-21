@@ -3,8 +3,15 @@ import { wishlistModel } from "../models/wishlist.js";
 // for frontend user's use 
 const getUserWishlist = (userId) => {
     return wishlistModel.find({ userId: userId })
-      .populate("gemId", "-embeddings")
-  .populate("userId", "firstName lastName email");
+      .populate({
+        path: "gemId",
+        select: "-embeddings",
+        populate: {
+          path: "category",  // أو "categoryId" حسب اسم الـfield في الـgem model
+          select: "categoryName"     // هتجيب بس الاسم، أو حط الـfields اللي عايزها
+        }
+      })
+      .populate("userId", "firstName lastName email");
 };
 
 const getWishlistItem = async (userId, gemId) => {
