@@ -105,7 +105,6 @@ const signIn = catchAsyncError(async (req, res, next) => {
     expiresIn: "7d",
   });
 
-  // إعدادات cookies حسب البيئة
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -114,16 +113,12 @@ const signIn = catchAsyncError(async (req, res, next) => {
     path: "/",
   };
 
-  // لو في production وعايز تحدد domain معين
-  if (process.env.NODE_ENV === "production" && process.env.FRONTEND_URL) {
-    cookieOptions.domain = process.env.FRONTEND_URL;
-  }
-
   res
     .cookie("token", token, cookieOptions)
     .status(200)
     .json({ message: "Login successful", success: true });
 });
+
 const VerifyUser = catchAsyncError(async (req, res, next) => {
   const { email, code } = req.body;
 
