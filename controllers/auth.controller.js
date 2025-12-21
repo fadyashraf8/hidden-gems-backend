@@ -31,10 +31,10 @@ const signUp = catchAsyncError(async (req, res, next) => {
 
   await result.save();
 
- await sendEmail(
-  req.body.email,
-  "Welcome to Gemsy",
-  `
+  await sendEmail(
+    req.body.email,
+    "Welcome to Gemsy",
+    `
   <!DOCTYPE html>
   <html lang="en">
   <head>
@@ -49,7 +49,9 @@ const signUp = catchAsyncError(async (req, res, next) => {
           <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:12px; padding:40px; text-align:center;">
             <tr>
               <td>
-                <h1 style="color:#dd0303; font-size:28px; margin:0;">Welcome, ${req.body.firstName}!</h1>
+                <h1 style="color:#dd0303; font-size:28px; margin:0;">Welcome, ${
+                  req.body.firstName
+                }!</h1>
               </td>
             </tr>
             <tr>
@@ -81,8 +83,7 @@ const signUp = catchAsyncError(async (req, res, next) => {
   </body>
   </html>
   `
-);
-
+  );
 
   res.status(201).json({
     message: "User registered successfully. Please verify your email.",
@@ -106,29 +107,25 @@ const signIn = catchAsyncError(async (req, res, next) => {
     expiresIn: "7d",
   });
 
-  // ✅ بس غيّر الـ cookie settings
+  const isProduction = process.env.NODE_ENV === "production";
+
   const cookieOptions = {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: isProduction, // ⭐ true في production فقط
+    sameSite: isProduction ? "none" : "lax", // ⭐ conditional
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/",
   };
 
-  console.log("🍪 Setting cookie with options:", cookieOptions);
-
-  res
-    .cookie("token", token, cookieOptions)
-    .status(200)
-    .json({ 
-      message: "Login successful",
-      success: true,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-      }
-    });
+  res.cookie("token", token, cookieOptions).status(200).json({
+    message: "Login successful",
+    success: true,
+    // user: {
+    //   id: user._id,
+    //   email: user.email,
+    //   name: user.name,
+    // }
+  });
 });
 
 const VerifyUser = catchAsyncError(async (req, res, next) => {
@@ -184,18 +181,18 @@ const resetPassword = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ message: "Password Reset Successful" });
 });
 const logout = (req, res) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  
   res
     .clearCookie("token", {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-            path: "/", // ⭐ مهم جداً
-
+      secure: isProduction, // ⭐ نفس signIn
+      sameSite: isProduction ? "none" : "lax", // ⭐ نفس signIn
+      path: "/",
     })
     .status(200)
-    .json({ message: "Logged out successfully" });
+    .json({ message: "Logged out successfully", success: true });
 };
-
 const protectedRoutes = catchAsyncError(async (req, res, next) => {
   const token = req.cookies.token;
 
@@ -687,19 +684,20 @@ const googleLogin = catchAsyncError(async (req, res, next) => {
       expiresIn: "7d",
     });
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res
       .cookie("token", jwtToken, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // ⭐ أضف دي
-        path: "/", // ⭐ أضف دي
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: "/",
       })
       .status(200)
       .json({
         message: "Login successful",
-                success: true, // ⭐ أضف دي عشان يكون consistent مع signIn
-
+        success: true,
         user: {
           id: user._id,
           email: user.email,
