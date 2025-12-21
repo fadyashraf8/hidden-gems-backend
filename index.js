@@ -37,9 +37,23 @@ const connectDB = async () => {
   }
 };
 
+// CORS settings - مهم جداً!
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  process.env.FRONTEND_URL, // حط الـ frontend URL هنا
+].filter(Boolean);
+
 app.use(cors({ 
-  origin: (origin, cb) => cb(null, origin), 
-  credentials: true 
+  origin: (origin, cb) => {
+    // السماح بالـ requests من Postman أو بدون origin
+    if (!origin || allowedOrigins.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(null, true); // أو cb(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true // ده أهم حاجة للـ cookies!
 }));
 
 app.use(cookieParser());
