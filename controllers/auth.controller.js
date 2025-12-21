@@ -101,23 +101,34 @@ const signIn = catchAsyncError(async (req, res, next) => {
   if (!user.verified)
     return next(new AppError(`Please verify your email first`, 403));
 
+  // ✅ ارجع للـ payload القديم
   let token = jwt.sign({ userInfo: user }, process.env.JWT_KEY, {
     expiresIn: "7d",
   });
 
-  // إعدادات cookies محسّنة
+  // ✅ بس غيّر الـ cookie settings
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // true في production فقط
-    sameSite: "lax", // أو "strict" - هيشتغل على incognito و iPhone
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام بالميلي ثانية
-    path: "/", // مهم جداً
+    secure: true,
+    sameSite: "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
   };
+
+  console.log("🍪 Setting cookie with options:", cookieOptions);
 
   res
     .cookie("token", token, cookieOptions)
     .status(200)
-    .json({ message: "Login successful" });
+    .json({ 
+      message: "Login successful",
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+      }
+    });
 });
 
 const VerifyUser = catchAsyncError(async (req, res, next) => {
@@ -178,6 +189,8 @@ const logout = (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: "none",
+            path: "/", // ⭐ مهم جداً
+
     })
     .status(200)
     .json({ message: "Logged out successfully" });
@@ -679,10 +692,14 @@ const googleLogin = catchAsyncError(async (req, res, next) => {
         httpOnly: true,
         secure: true,
         sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // ⭐ أضف دي
+        path: "/", // ⭐ أضف دي
       })
       .status(200)
       .json({
         message: "Login successful",
+                success: true, // ⭐ أضف دي عشان يكون consistent مع signIn
+
         user: {
           id: user._id,
           email: user.email,
