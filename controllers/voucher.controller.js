@@ -231,7 +231,7 @@ const getAllVouchersForOwner = catchAsyncError(async (req, res, next) => {
 const createVoucherByPoints = catchAsyncError(async (req, res, next) => {
     const userId = req.user._id;
     const userObj = await getUserPoints(userId);
-    const {points} = req.body || 0;
+    let {points} = req.body || 0;
     const {gemId} = req.params
     if(points > 300) {
         points = 300;
