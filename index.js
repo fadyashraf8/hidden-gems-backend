@@ -50,7 +50,8 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       cb(null, true);
     } else {
-      cb(null, true); // أو cb(new Error('Not allowed by CORS'))
+      console.log("Blocked by CORS:", origin); // Check your Vercel logs for this!
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true // ده أهم حاجة للـ cookies!
